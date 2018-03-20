@@ -20,22 +20,31 @@ extra-source-files:
 description:         Please see the README on Github at <https://github.com/githubuser/weibo-export#readme>
 
 default-extensions:
+- DataKinds
 - DeriveGeneric
+- GeneralizedNewtypeDeriving
 - NamedFieldPuns
-- RecordWildCards
 - OverloadedStrings
+- RankNTypes
+- RecordWildCards
 - ScopedTypeVariables
 
 library:
   source-dirs: src
   dependencies:
   - base >= 4.7 && < 5
+  - bytestring
   - wreq
   - turtle
   - aeson
   - text
+  - http-client
+  - http-client-tls
   - servant
   - servant-client
+  - wreq
+  - lens
+  - vector
 
 
 executables:

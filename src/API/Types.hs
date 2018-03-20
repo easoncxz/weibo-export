@@ -1,22 +1,45 @@
 module API.Types
-  ( Status(..)
+  ( ID(..)
+  , Status(..)
+  , StatusID
   , User(..)
+  , UserID
   , Comment(..)
-  , Picture(..)
+  , CommentID
+  , Picture
+  , StatusListResponse(..)
+  , CommentListResponse(..)
   ) where
 
 import Control.Applicative
 import Control.Monad
 import Data.Aeson
+import Data.Function ((&))
 import Data.Text (Text)
+import qualified Data.Vector as V
 import GHC.Generics
 import Servant.API
 
+data ID a i = ID
+  { runID :: i
+  } deriving (Show)
+
+instance (FromHttpApiData i) => FromHttpApiData (ID a i) where
+  parseUrlPiece = fmap ID . parseUrlPiece
+
+instance (ToHttpApiData i) => ToHttpApiData (ID a i) where
+  toUrlPiece = toUrlPiece . runID
+
+instance (FromJSON i) => FromJSON (ID a i) where
+  parseJSON = fmap ID . parseJSON
+
+type StatusID = ID Status Text
+
 data Status = Status
-  { statusID :: Text
+  { statusID :: StatusID
   , statusCreatedAt :: Text
   , statusText :: Text
-  , statusPicIDs :: [Text]
+  , statusPicIDs :: Maybe [Text]
   , statusUser :: User
   , statusRetweetedStatus :: Maybe Status
   , statusCommentsCount :: Int
@@ -29,15 +52,17 @@ instance FromJSON Status where
       statusID <- o .: "idstr"
       statusCreatedAt <- o .: "created_at"
       statusText <- o .: "text"
-      statusPicIDs <- o .: "pic_ids"
+      statusPicIDs <- o .:? "pic_ids"
       statusUser <- o .: "user"
-      statusRetweetedStatus <- o .: "retweeted_status"
+      statusRetweetedStatus <- o .:? "retweeted_status"
       statusCommentsCount <- o .: "comments_count"
       let statusRawJSON = Object o
       return Status {..}
 
+type UserID = ID User Int
+
 data User = User
-  { userID :: Int
+  { userID :: UserID
   , userScreenName :: Text
   , userProfileImageURL :: Text
   , userRawJSON :: Value
@@ -52,8 +77,10 @@ instance FromJSON User where
       let userRawJSON = Object o
       return User {..}
 
+type CommentID = ID Comment Text
+
 data Comment = Comment
-  { commentID :: Text
+  { commentID :: CommentID
   , commentUser :: User
   , commentCreatedAt :: Text
   , commentSource :: Text
@@ -80,13 +107,24 @@ data Picture =
   Picture
   deriving (Show)
 
-newtype PageResponse =
-  PageResponse [Status]
-  deriving (Show)
+newtype StatusListResponse = StatusListResponse
+  { unStatusListResponse :: [Status]
+  } deriving (Show)
 
-instance FromJSON PageResponse where
+instance FromJSON StatusListResponse where
+  parseJSON = do
+    withArray "a one-element array" $ \a ->
+      V.headM a >>=
+      (withObject "a mod/page_list response" $ \o -> do
+         cards :: [Object] <- o .: "card_group"
+         statuses <- sequence [c .: "mblog" | c <- cards]
+         return (StatusListResponse statuses))
+
+newtype CommentListResponse = CommentListResponse
+  { unCommentListResponse :: [Comment]
+  } deriving (Show)
+
+instance FromJSON CommentListResponse where
   parseJSON =
-    withObject "a mod/page_list response" $ \o -> do
-      cards :: [Object] <- o .: "card_group"
-      statuses <- sequence [c .: "mblog" | c <- cards]
-      return (PageResponse statuses)
+    withObject "a response holding some comments" $
+    return . CommentListResponse <=< (.: "data") <=< (.: "data")
