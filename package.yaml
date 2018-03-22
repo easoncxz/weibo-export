@@ -22,7 +22,9 @@ description:         Please see the README on Github at <https://github.com/gith
 default-extensions:
 - DataKinds
 - DeriveGeneric
+- EmptyDataDecls
 - GeneralizedNewtypeDeriving
+- LambdaCase
 - NamedFieldPuns
 - OverloadedStrings
 - RankNTypes
@@ -56,15 +58,23 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - base
     - weibo-export
 
 tests:
   weibo-export-test:
-    main:                Spec.hs
+    main:                Main.hs
     source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
+    - base
     - weibo-export
+    - hspec
+    - aeson
+    - bytestring
+    - directory
+    - filepath
+    - HUnit

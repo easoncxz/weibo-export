@@ -14,7 +14,7 @@ module API.Types
 import Control.Applicative
 import Control.Monad
 import Data.Aeson
-import Data.Function ((&))
+import Data.Function ((&), on)
 import Data.Text (Text)
 import qualified Data.Vector as V
 import GHC.Generics
@@ -33,31 +33,43 @@ instance (ToHttpApiData i) => ToHttpApiData (ID a i) where
 instance (FromJSON i) => FromJSON (ID a i) where
   parseJSON = fmap ID . parseJSON
 
+instance (Eq i) => Eq (ID a i) where
+  (==) = (==) `on` runID
+
 type StatusID = ID Status Text
 
-data Status = Status
-  { statusID :: StatusID
-  , statusCreatedAt :: Text
-  , statusText :: Text
-  , statusPicIDs :: Maybe [Text]
-  , statusUser :: User
-  , statusRetweetedStatus :: Maybe Status
-  , statusCommentsCount :: Int
-  , statusRawJSON :: Value
-  } deriving (Show)
+data Status
+  = NormalStatus { normalStatusID :: StatusID
+                 , normalStatusCreatedAt :: Text
+                 , normalStatusText :: Text
+                 , normalStatusPicIDs :: Maybe [Text]
+                 , normalStatusUser :: User
+                 , normalStatusRetweetedStatus :: Maybe Status
+                 , normalStatusCommentsCount :: Int
+                 , normalStatusRawJSON :: Value }
+  | DeletedStatus { deletedStatusID :: StatusID
+                  , deletedStatueCreatedAt :: Text
+                  , deletedStatusRawJSON :: Value }
+  deriving (Eq, Show)
 
 instance FromJSON Status where
   parseJSON =
     withObject "status object" $ \o -> do
-      statusID <- o .: "idstr"
-      statusCreatedAt <- o .: "created_at"
-      statusText <- o .: "text"
-      statusPicIDs <- o .:? "pic_ids"
-      statusUser <- o .: "user"
-      statusRetweetedStatus <- o .:? "retweeted_status"
-      statusCommentsCount <- o .: "comments_count"
-      let statusRawJSON = Object o
-      return Status {..}
+      let rawJSON = Object o
+      idStr <- o .: "idstr"
+      createdAt <- o .: "created_at"
+      o .:? "deleted" >>= \case
+        Just ("1" :: Text) -> return (DeletedStatus idStr createdAt rawJSON)
+        Nothing -> do
+          normalStatusText <- o .: "text"
+          normalStatusPicIDs <- o .:? "pic_ids"
+          normalStatusUser <- o .: "user"
+          normalStatusRetweetedStatus <- o .:? "retweeted_status"
+          normalStatusCommentsCount <- o .: "comments_count"
+          let normalStatusID = idStr
+              normalStatusCreatedAt = createdAt
+              normalStatusRawJSON = rawJSON
+          return NormalStatus {..}
 
 type UserID = ID User Int
 
@@ -66,7 +78,7 @@ data User = User
   , userScreenName :: Text
   , userProfileImageURL :: Text
   , userRawJSON :: Value
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 instance FromJSON User where
   parseJSON =
@@ -88,7 +100,7 @@ data Comment = Comment
   , commentReplyID :: Text
   , commentReplyText :: Text
   , commentRawJSON :: Value
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 instance FromJSON Comment where
   parseJSON =
@@ -103,13 +115,11 @@ instance FromJSON Comment where
       let commentRawJSON = Object o
       return Comment {..}
 
-data Picture =
-  Picture
-  deriving (Show)
+data Picture
 
 newtype StatusListResponse = StatusListResponse
   { unStatusListResponse :: [Status]
-  } deriving (Show)
+  } deriving (Eq, Show)
 
 instance FromJSON StatusListResponse where
   parseJSON = do
