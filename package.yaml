@@ -34,19 +34,19 @@ default-extensions:
 library:
   source-dirs: src
   dependencies:
+  - aeson
   - base >= 4.7 && < 5
   - bytestring
-  - wreq
-  - turtle
-  - aeson
-  - text
   - http-client
   - http-client-tls
+  - lens
+  - pretty-simple
   - servant
   - servant-client
-  - wreq
-  - lens
+  - text
+  - turtle
   - vector
+  - wreq
 
 
 executables:
