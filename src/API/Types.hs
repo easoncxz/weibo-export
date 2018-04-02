@@ -6,18 +6,18 @@ module API.Types
   , UserID
   , Comment(..)
   , CommentID
-  , Picture
+  , Picture(..)
+  , PictureID
   , StatusListResponse(..)
   , CommentListResponse(..)
   ) where
 
-import Control.Applicative
 import Control.Monad
 import Data.Aeson
-import Data.Function ((&), on)
+import qualified Data.ByteString.Lazy as BSL
+import Data.Function (on)
 import Data.Text (Text)
 import qualified Data.Vector as V
-import GHC.Generics
 import Servant.API
 
 data ID a i = ID
@@ -42,7 +42,7 @@ data Status
   = NormalStatus { normalStatusID :: StatusID
                  , normalStatusCreatedAt :: Text
                  , normalStatusText :: Text
-                 , normalStatusPicIDs :: Maybe [Text]
+                 , normalStatusPicIDs :: Maybe [PictureID]
                  , normalStatusUser :: User
                  , normalStatusRetweetedStatus :: Maybe Status
                  , normalStatusCommentsCount :: Int
@@ -60,6 +60,7 @@ instance FromJSON Status where
       createdAt <- o .: "created_at"
       o .:? "deleted" >>= \case
         Just ("1" :: Text) -> return (DeletedStatus idStr createdAt rawJSON)
+        Just other -> fail $ "Unrecognised value at $.deleted: " ++ show other
         Nothing -> do
           normalStatusText <- o .: "text"
           normalStatusPicIDs <- o .:? "pic_ids"
@@ -122,7 +123,17 @@ instance FromJSON Comment where
 instance ToJSON Comment where
   toJSON Comment {commentRawJSON} = toJSON commentRawJSON
 
-data Picture
+data Picture = Picture
+  { pictureID :: PictureID
+  , pictureBytes :: BSL.ByteString
+  } deriving (Eq)
+
+instance Show Picture where
+  show Picture {pictureID = ID t, pictureBytes = b} =
+    "Picture { pictureID = " ++
+    show t ++ ", pictureBytes = <" ++ show (BSL.length b) ++ " bytes> }"
+
+type PictureID = ID Picture Text
 
 newtype StatusListResponse = StatusListResponse
   { statusListResponseStatuses :: [Status]

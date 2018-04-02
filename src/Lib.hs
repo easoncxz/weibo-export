@@ -1,7 +1,9 @@
 module Lib
   ( someFunc
+  , DeepTweet(..)
   ) where
 
+import qualified Data.ByteString.Lazy as BSL
 import Data.Text (Text)
 import qualified Data.Text.IO as T
 import qualified Servant.Client as Servant
@@ -18,15 +20,21 @@ getClient = do
   cookie <- T.getLine
   API.newWeiboApiClient (API.Cookie cookie)
 
-debugRun :: IO (Either Servant.ServantError [API.Status])
-debugRun = do
+_debugRun :: IO (Either Servant.ServantError [API.Status])
+_debugRun = do
   c <- getClient
   API.getStatuses c Nothing
 
-debugComments :: Text -> IO (Either Servant.ServantError [API.Comment])
-debugComments statusID = do
+_debugComments :: Text -> IO (Either Servant.ServantError [API.Comment])
+_debugComments statusID = do
   c <- getClient
   API.getComments c (API.ID statusID) Nothing
+
+_debugDownloadPhoto :: Text -> IO ()
+_debugDownloadPhoto pidT = do
+  c <- getClient
+  API.Picture {pictureBytes = bytes} <- API.downloadPicture c (API.ID pidT)
+  BSL.writeFile "image.jpg" bytes
 
 data DeepTweet =
   DeepTweet API.Status

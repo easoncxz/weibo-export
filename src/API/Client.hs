@@ -7,21 +7,21 @@ module API.Client
   , Cookie(..)
   ) where
 
-import Control.Monad
+import Control.Lens
 import Control.Monad.IO.Class
-import qualified Data.ByteString.Lazy.Char8 as BSL8
-import Data.Function
+import qualified Data.ByteString.UTF8 as BS8
+import Data.Monoid ((<>))
 import Data.Proxy
 import Data.Text
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
+import qualified Data.Text.Encoding as T
 import Network.HTTP.Client (newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
+import qualified Network.HTTP.Types.URI as HTTP
+import qualified Network.Wreq as Wreq
 import Servant.API
 import Servant.Client
 
 import API.Types
-import Logging
 
 newtype Cookie = Cookie
   { unCookie :: Text
@@ -38,11 +38,19 @@ type WeiboApi = Header "Cookie" Cookie :> (StatusesApi :<|> CommentsApi)
 weiboApi :: Proxy WeiboApi
 weiboApi = Proxy
 
+largeJpgUrl :: PictureID -> String
+largeJpgUrl (ID pid) =
+  BS8.toString $
+  "https://ww1.sinaimg.cn/large/" <> HTTP.urlEncode True (T.encodeUtf8 pid) <>
+  ".jpg"
+
 data WeiboApiClient = WeiboApiClient
   { getStatuses :: forall m. MonadIO m =>
                                Maybe Int -> m (Either ServantError [Status])
   , getComments :: forall m. MonadIO m =>
                                StatusID -> Maybe Int -> m (Either ServantError [Comment])
+  , downloadPicture :: forall m. MonadIO m =>
+                                   PictureID -> m Picture
   }
 
 newWeiboApiClient :: Cookie -> IO WeiboApiClient
@@ -59,4 +67,10 @@ newWeiboApiClient cookie = do
       getComments statusID mbPage =
         fmap (fmap commentListResponseComments) . liftIO $
         runClientM (getCommentsM (Just statusID) mbPage) clientEnv
+      downloadPicture pid =
+        liftIO $ do
+          r <- Wreq.get (largeJpgUrl pid)
+          let pictureID = pid
+              pictureBytes = r ^. Wreq.responseBody
+          return Picture {..}
   return WeiboApiClient {..}
