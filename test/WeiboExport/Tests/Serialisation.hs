@@ -13,9 +13,16 @@ import Test.Hspec
 
 spec :: Spec
 spec =
-  describe "the status-list response" $ do
-    before (BSL.readFile "test/sample-data/status-list-response.json") $ do
-      it "can be decoded" $ \bytes -> do
-        case Aeson.eitherDecode bytes of
-          Left msg -> assertFailure msg
-          Right (_ :: StatusListResponse) -> return ()
+  describe "serialisation of API datatypes" $ do
+    describe "the status-list response" $ do
+      before (BSL.readFile "test/sample-data/status-list-response.json") $ do
+        it "can be decoded" $ \bytes -> do
+          case Aeson.eitherDecode bytes of
+            Left msg -> assertFailure msg
+            Right (_ :: StatusListResponse) -> return ()
+    describe "the comment-list response" $ do
+      before (BSL.readFile "test/sample-data/comment-list-response.json") $ do
+        it "can be decoded" $ \bytes -> do
+          case Aeson.eitherDecode bytes of
+            Left msg -> assertFailure msg
+            Right (_ :: CommentListResponse) -> return ()

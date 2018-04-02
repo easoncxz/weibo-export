@@ -71,7 +71,7 @@ instance FromJSON Status where
               normalStatusRawJSON = rawJSON
           return NormalStatus {..}
 
-type UserID = ID User Int
+type UserID = ID User Integer
 
 data User = User
   { userID :: UserID
@@ -89,7 +89,7 @@ instance FromJSON User where
       let userRawJSON = Object o
       return User {..}
 
-type CommentID = ID Comment Text
+type CommentID = ID Comment Integer
 
 data Comment = Comment
   { commentID :: CommentID
@@ -97,8 +97,8 @@ data Comment = Comment
   , commentCreatedAt :: Text
   , commentSource :: Text
   , commentText :: Text
-  , commentReplyID :: Text
-  , commentReplyText :: Text
+  , commentReplyID :: Maybe CommentID
+  , commentReplyText :: Maybe Text
   , commentRawJSON :: Value
   } deriving (Eq, Show)
 
@@ -110,8 +110,8 @@ instance FromJSON Comment where
       commentSource <- o .: "source"
       commentUser <- o .: "user"
       commentText <- o .: "text"
-      commentReplyID <- o .: "reply_id"
-      commentReplyText <- o .: "reply_text"
+      commentReplyID <- o .:? "reply_id"
+      commentReplyText <- o .:? "reply_text"
       let commentRawJSON = Object o
       return Comment {..}
 

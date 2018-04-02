@@ -9,5 +9,4 @@ main :: IO ()
 main = hspec allTests
 
 allTests :: Spec
-allTests = do
-  describe "serialisation of API datatypes" Serialisation.spec
+allTests = describe "all tests" $ Serialisation.spec
