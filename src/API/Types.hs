@@ -71,6 +71,10 @@ instance FromJSON Status where
               normalStatusRawJSON = rawJSON
           return NormalStatus {..}
 
+instance ToJSON Status where
+  toJSON NormalStatus {normalStatusRawJSON} = toJSON normalStatusRawJSON
+  toJSON DeletedStatus {deletedStatusRawJSON} = toJSON deletedStatusRawJSON
+
 type UserID = ID User Integer
 
 data User = User
@@ -114,6 +118,9 @@ instance FromJSON Comment where
       commentReplyText <- o .:? "reply_text"
       let commentRawJSON = Object o
       return Comment {..}
+
+instance ToJSON Comment where
+  toJSON Comment {commentRawJSON} = toJSON commentRawJSON
 
 data Picture
 
