@@ -26,7 +26,7 @@ spec =
         it "can be round-triped" $ \bytes -> do
           case Aeson.eitherDecode bytes of
             Left msg -> assertFailure msg
-            Right StatusListResponse {unStatusListResponse = statuses} ->
+            Right StatusListResponse {statusListResponseStatuses = statuses} ->
               Aeson.parseEither Aeson.parseJSON (Aeson.toJSONList statuses) `shouldBe`
               Right statuses
     describe "the comment-list response" $ do
@@ -40,6 +40,6 @@ spec =
         it "can be round-triped" $ \bytes -> do
           case Aeson.eitherDecode bytes of
             Left msg -> assertFailure msg
-            Right CommentListResponse {unCommentListResponse = comments} ->
+            Right CommentListResponse {commentListResponseComments = comments} ->
               Aeson.parseEither Aeson.parseJSON (Aeson.toJSONList comments) `shouldBe`
               Right comments

@@ -125,7 +125,7 @@ instance ToJSON Comment where
 data Picture
 
 newtype StatusListResponse = StatusListResponse
-  { unStatusListResponse :: [Status]
+  { statusListResponseStatuses :: [Status]
   } deriving (Eq, Show)
 
 instance FromJSON StatusListResponse where
@@ -138,7 +138,7 @@ instance FromJSON StatusListResponse where
          return (StatusListResponse statuses))
 
 newtype CommentListResponse = CommentListResponse
-  { unCommentListResponse :: [Comment]
+  { commentListResponseComments :: [Comment]
   } deriving (Show)
 
 instance FromJSON CommentListResponse where

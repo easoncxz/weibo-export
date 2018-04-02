@@ -1,9 +1,12 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE LambdaCase #-}
 
-module API.Client where
+module API.Client
+  ( WeiboApiClient(..)
+  , newWeiboApiClient
+  , Cookie(..)
+  ) where
 
-import API.Types
 import Control.Monad
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy.Char8 as BSL8
@@ -16,6 +19,9 @@ import Network.HTTP.Client (newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Servant.API
 import Servant.Client
+
+import API.Types
+import Logging
 
 newtype Cookie = Cookie
   { unCookie :: Text
@@ -39,9 +45,6 @@ data WeiboApiClient = WeiboApiClient
                                StatusID -> Maybe Int -> m (Either ServantError [Comment])
   }
 
-logError :: MonadIO m => String -> m ()
-logError = liftIO . putStrLn
-
 newWeiboApiClient :: Cookie -> IO WeiboApiClient
 newWeiboApiClient cookie = do
   let newClientEnv :: IO ClientEnv
@@ -51,16 +54,9 @@ newWeiboApiClient cookie = do
   clientEnv <- newClientEnv
   let getStatusesM :<|> getCommentsM = client weiboApi (Just cookie)
       getStatuses mbPage = do
-        fmap (fmap unStatusListResponse) . liftIO $
+        fmap (fmap statusListResponseStatuses) . liftIO $
           runClientM (getStatusesM (Just "cards") mbPage) clientEnv
       getComments statusID mbPage =
-        fmap (fmap unCommentListResponse) . liftIO $
+        fmap (fmap commentListResponseComments) . liftIO $
         runClientM (getCommentsM (Just statusID) mbPage) clientEnv
   return WeiboApiClient {..}
-
--- debugRun :: IO ()
-debugRun = do
-  putStr "Please provide a cookie: "
-  cookie <- T.getLine
-  c <- newWeiboApiClient (Cookie cookie)
-  getStatuses c Nothing
