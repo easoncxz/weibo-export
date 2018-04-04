@@ -12,15 +12,22 @@ sampleStatusListResponseIO = do
     Left msg -> fail msg
     Right response -> return response
 
-sampleStatusIO :: IO Status
+sampleStatusIO :: IO (Status, Status)
 sampleStatusIO = do
-  StatusListResponse {statusListResponseStatuses = status:_} <-
+  StatusListResponse {statusListResponseStatuses = ss} <-
     sampleStatusListResponseIO
-  return status
+  let normal = head [s | s@NormalStatus {} <- ss]
+      deleted =
+        head
+          [ s
+          | NormalStatus {normalStatusRetweetedStatus = Just s@DeletedStatus {}} <-
+              ss
+          ]
+  return (normal, deleted)
 
 sampleUserIO :: IO User
 sampleUserIO = do
-  NormalStatus {normalStatusUser} <- sampleStatusIO
+  (NormalStatus {normalStatusUser}, _) <- sampleStatusIO
   return normalStatusUser
 
 sampleCommentListResponseIO :: IO CommentListResponse

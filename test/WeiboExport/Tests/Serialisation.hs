@@ -18,8 +18,9 @@ spec =
       it "can be decoded" $ void sampleStatusListResponseIO
     describe "the status type" $ do
       before sampleStatusIO $ do
-        it "can be round-triped" $ \status -> do
-          parseEither parseJSON (toJSON status) `shouldBe` Right status
+        it "can be round-triped" $ \(normal, deleted) -> do
+          parseEither parseJSON (toJSON normal) `shouldBe` Right normal
+          parseEither parseJSON (toJSON deleted) `shouldBe` Right deleted
     describe "the comment-list response" $ do
       it "can be decoded" $ void sampleCommentListResponseIO
     describe "the comment type" $ do
