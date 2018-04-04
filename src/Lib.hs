@@ -1,7 +1,4 @@
-module Lib
-  ( someFunc
-  , DeepTweet(..)
-  ) where
+module Lib where
 
 import qualified Data.ByteString.Lazy as BSL
 import Data.Text (Text)
@@ -10,9 +7,6 @@ import qualified Servant.Client as Servant
 
 import qualified API.Client as API
 import qualified API.Types as API
-
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
 
 getClient :: IO API.WeiboApiClient
 getClient = do
@@ -33,10 +27,7 @@ _debugComments statusID = do
 _debugDownloadPhoto :: Text -> IO ()
 _debugDownloadPhoto pidT = do
   c <- getClient
-  API.Picture {pictureBytes = bytes} <- API.downloadPicture c (API.ID pidT)
-  BSL.writeFile "image.jpg" bytes
-
-data DeepTweet =
-  DeepTweet API.Status
-            [API.Comment]
-            [API.Picture]
+  API.Picture {pictureBytes = bytesM} <- API.downloadPicture c (API.ID pidT)
+  case bytesM of
+    Just bytes -> BSL.writeFile "image.jpg" bytes
+    Nothing -> putStrLn "Huh? No picture here."

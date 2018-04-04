@@ -22,14 +22,22 @@ description:         Please see the README on Github at <https://github.com/gith
 default-extensions:
 - DataKinds
 - DeriveGeneric
+- DisambiguateRecordFields
 - EmptyDataDecls
+- FlexibleContexts
+- FlexibleInstances
+- FunctionalDependencies
 - GeneralizedNewtypeDeriving
 - LambdaCase
+- MultiParamTypeClasses
 - NamedFieldPuns
 - OverloadedStrings
 - RankNTypes
 - RecordWildCards
 - ScopedTypeVariables
+- TemplateHaskell
+- TypeApplications
+- TypeOperators
 
 library:
   source-dirs: src
@@ -43,6 +51,7 @@ library:
   - http-client-tls
   - http-types
   - lens
+  - mtl
   - pretty-simple
   - servant
   - servant-client

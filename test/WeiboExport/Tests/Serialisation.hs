@@ -4,40 +4,32 @@ module WeiboExport.Tests.Serialisation
 
 import API.Types
 
-import qualified Data.Aeson as Aeson
-import qualified Data.Aeson.Types as Aeson
-import qualified Data.ByteString.Lazy as BSL
-import Test.HUnit.Base
+import Control.Monad
+import Data.Aeson
+import Data.Aeson.Types
 import Test.Hspec
+
+import WeiboExport.Tests.SampleData
 
 spec :: Spec
 spec =
   describe "serialisation of API datatypes" $ do
     describe "the status-list response" $ do
-      before (BSL.readFile "test/sample-data/status-list-response.json") $ do
-        it "can be decoded" $ \bytes -> do
-          case Aeson.eitherDecode bytes of
-            Left msg -> assertFailure msg
-            Right StatusListResponse {} -> return ()
+      it "can be decoded" $ void sampleStatusListResponseIO
     describe "the status type" $ do
-      before (BSL.readFile "test/sample-data/status-list-response.json") $ do
-        it "can be round-triped" $ \bytes -> do
-          case Aeson.eitherDecode bytes of
-            Left msg -> assertFailure msg
-            Right StatusListResponse {statusListResponseStatuses = statuses} ->
-              Aeson.parseEither Aeson.parseJSON (Aeson.toJSONList statuses) `shouldBe`
-              Right statuses
+      before sampleStatusIO $ do
+        it "can be round-triped" $ \status -> do
+          parseEither parseJSON (toJSON status) `shouldBe` Right status
     describe "the comment-list response" $ do
-      before (BSL.readFile "test/sample-data/comment-list-response.json") $ do
-        it "can be decoded" $ \bytes -> do
-          case Aeson.eitherDecode bytes of
-            Left msg -> assertFailure msg
-            Right CommentListResponse {} -> return ()
+      it "can be decoded" $ void sampleCommentListResponseIO
     describe "the comment type" $ do
-      before (BSL.readFile "test/sample-data/comment-list-response.json") $ do
-        it "can be round-triped" $ \bytes -> do
-          case Aeson.eitherDecode bytes of
-            Left msg -> assertFailure msg
-            Right CommentListResponse {commentListResponseComments = comments} ->
-              Aeson.parseEither Aeson.parseJSON (Aeson.toJSONList comments) `shouldBe`
-              Right comments
+      before sampleCommentIO $ do
+        it "can be round-triped" $ \comment ->
+          parseEither parseJSON (toJSON comment) `shouldBe` Right comment
+    describe "the picture type" $ do
+      it "can be round-tripped only if there are no bytes" $ do
+        let pid = ID "abc"
+            p = Picture {pictureID = pid, pictureBytes = Nothing}
+            pb = Picture {pictureID = pid, pictureBytes = Just "123"}
+        parseEither parseJSON (toJSON p) `shouldBe` Right p
+        parseEither parseJSON (toJSON pb) `shouldBe` Right p

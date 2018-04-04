@@ -21,20 +21,23 @@ import qualified Data.Vector as V
 import Servant.API
 
 data ID a i = ID
-  { runID :: i
+  { unID :: i
   } deriving (Show)
 
 instance (FromHttpApiData i) => FromHttpApiData (ID a i) where
   parseUrlPiece = fmap ID . parseUrlPiece
 
 instance (ToHttpApiData i) => ToHttpApiData (ID a i) where
-  toUrlPiece = toUrlPiece . runID
+  toUrlPiece = toUrlPiece . unID
 
 instance (FromJSON i) => FromJSON (ID a i) where
   parseJSON = fmap ID . parseJSON
 
+instance (ToJSON i) => ToJSON (ID a i) where
+  toJSON = toJSON . unID
+
 instance (Eq i) => Eq (ID a i) where
-  (==) = (==) `on` runID
+  (==) = (==) `on` unID
 
 type StatusID = ID Status Text
 
@@ -125,15 +128,22 @@ instance ToJSON Comment where
 
 data Picture = Picture
   { pictureID :: PictureID
-  , pictureBytes :: BSL.ByteString
+  , pictureBytes :: Maybe BSL.ByteString
   } deriving (Eq)
+
+type PictureID = ID Picture Text
 
 instance Show Picture where
   show Picture {pictureID = ID t, pictureBytes = b} =
     "Picture { pictureID = " ++
-    show t ++ ", pictureBytes = <" ++ show (BSL.length b) ++ " bytes> }"
+    show t ++ ", pictureBytes = <" ++ show (BSL.length <$> b) ++ " bytes> }"
 
-type PictureID = ID Picture Text
+instance ToJSON Picture where
+  toJSON Picture {pictureID} = object ["pictureID" .= toJSON pictureID]
+
+instance FromJSON Picture where
+  parseJSON =
+    withObject "Picture" $ \o -> Picture <$> (o .: "pictureID") <*> pure Nothing
 
 newtype StatusListResponse = StatusListResponse
   { statusListResponseStatuses :: [Status]

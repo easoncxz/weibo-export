@@ -5,6 +5,7 @@ module API.Client
   ( WeiboApiClient(..)
   , newWeiboApiClient
   , Cookie(..)
+  , largeJpgUrl
   ) where
 
 import Control.Lens
@@ -71,6 +72,6 @@ newWeiboApiClient cookie = do
         liftIO $ do
           r <- Wreq.get (largeJpgUrl pid)
           let pictureID = pid
-              pictureBytes = r ^. Wreq.responseBody
+              pictureBytes = Just (r ^. Wreq.responseBody)
           return Picture {..}
   return WeiboApiClient {..}
