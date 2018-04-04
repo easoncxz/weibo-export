@@ -33,3 +33,7 @@ spec =
             pb = Picture {pictureID = pid, pictureBytes = Just "123"}
         parseEither parseJSON (toJSON p) `shouldBe` Right p
         parseEither parseJSON (toJSON pb) `shouldBe` Right p
+    describe "the user type" $ do
+      before sampleUserIO $ do
+        it "can be round-tripped through JSON" $ \user -> do
+          parseEither parseJSON (toJSON user) `shouldBe` Right user

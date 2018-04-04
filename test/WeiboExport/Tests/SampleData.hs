@@ -18,6 +18,11 @@ sampleStatusIO = do
     sampleStatusListResponseIO
   return status
 
+sampleUserIO :: IO User
+sampleUserIO = do
+  NormalStatus {normalStatusUser} <- sampleStatusIO
+  return normalStatusUser
+
 sampleCommentListResponseIO :: IO CommentListResponse
 sampleCommentListResponseIO = do
   bytes <- BSL.readFile "test/sample-data/comment-list-response.json"

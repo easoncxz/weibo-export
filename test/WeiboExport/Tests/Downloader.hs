@@ -9,19 +9,18 @@ import WeiboExport.Tests.SampleData
 spec :: Spec
 spec = do
   describe "Downloader" $ do
-    describe "status" $ do
+    describe "DeepStatus" $ do
       before
         (do s <- sampleStatusIO
             c <- sampleCommentIO
             let p = samplePictureWithoutBytes
-            return (Status s [c] [p])) $ do
-        it "exists" $ \status@(Status s cs ps) -> do
-          encode status `shouldBe`
+            return (DeepStatus s [c] [p])) $ do
+        it "exists" $ \ds@(DeepStatus s cs ps) -> do
+          encode ds `shouldBe`
             encode
               (object
                  [ "statusPerSe" .= toJSON s
                  , "statusComments" .= toJSON cs
                  , "statusPictures" .= toJSON ps
                  ])
-        it "round-trips" $ \status ->
-          decode (encode status) `shouldBe` Just status
+        it "round-trips" $ \ds -> decode (encode ds) `shouldBe` Just ds

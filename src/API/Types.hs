@@ -21,25 +21,63 @@ import qualified Data.Vector as V
 import Servant.API
 
 data ID a i = ID
-  { unID :: i
+  { getID :: i
   } deriving (Show)
 
 instance (FromHttpApiData i) => FromHttpApiData (ID a i) where
   parseUrlPiece = fmap ID . parseUrlPiece
 
 instance (ToHttpApiData i) => ToHttpApiData (ID a i) where
-  toUrlPiece = toUrlPiece . unID
+  toUrlPiece = toUrlPiece . getID
 
 instance (FromJSON i) => FromJSON (ID a i) where
   parseJSON = fmap ID . parseJSON
 
 instance (ToJSON i) => ToJSON (ID a i) where
-  toJSON = toJSON . unID
+  toJSON = toJSON . getID
 
 instance (Eq i) => Eq (ID a i) where
-  (==) = (==) `on` unID
+  (==) = (==) `on` getID
 
-type StatusID = ID Status Text
+data Picture = Picture
+  { pictureID :: PictureID
+  , pictureBytes :: Maybe BSL.ByteString
+  } deriving (Eq)
+
+type PictureID = ID Picture Text
+
+instance Show Picture where
+  show Picture {pictureID = ID t, pictureBytes = b} =
+    "Picture { pictureID = " ++
+    show t ++ ", pictureBytes = <" ++ show (BSL.length <$> b) ++ " bytes> }"
+
+instance ToJSON Picture where
+  toJSON Picture {pictureID} = object ["pictureID" .= toJSON pictureID]
+
+instance FromJSON Picture where
+  parseJSON =
+    withObject "Picture" $ \o -> Picture <$> (o .: "pictureID") <*> pure Nothing
+
+data User = User
+  { userID :: UserID
+  , userScreenName :: Text
+  , userProfileImageURL :: Text
+  , userRawJSON :: Value
+  } deriving (Eq, Show)
+
+type UserID = ID User Integer
+
+instance FromJSON User where
+  parseJSON =
+    withObject "user object" $ \o -> do
+      userID <- o .: "id"
+      userScreenName <- o .: "screen_name"
+      userProfileImageURL <- o .: "profile_image_url"
+      let userRawJSON = Object o
+      return User {..}
+
+instance ToJSON User where
+  toJSON = toJSON . userRawJSON
 
 data Status
   = NormalStatus { normalStatusID :: StatusID
@@ -54,6 +92,8 @@ data Status
                   , deletedStatueCreatedAt :: Text
                   , deletedStatusRawJSON :: Value }
   deriving (Eq, Show)
+
+type StatusID = ID Status Text
 
 instance FromJSON Status where
   parseJSON =
@@ -79,26 +119,6 @@ instance ToJSON Status where
   toJSON NormalStatus {normalStatusRawJSON} = toJSON normalStatusRawJSON
   toJSON DeletedStatus {deletedStatusRawJSON} = toJSON deletedStatusRawJSON
 
-type UserID = ID User Integer
-
-data User = User
-  { userID :: UserID
-  , userScreenName :: Text
-  , userProfileImageURL :: Text
-  , userRawJSON :: Value
-  } deriving (Eq, Show)
-
-instance FromJSON User where
-  parseJSON =
-    withObject "user object" $ \o -> do
-      userID <- o .: "id"
-      userScreenName <- o .: "screen_name"
-      userProfileImageURL <- o .: "profile_image_url"
-      let userRawJSON = Object o
-      return User {..}
-
-type CommentID = ID Comment Integer
-
 data Comment = Comment
   { commentID :: CommentID
   , commentUser :: User
@@ -109,6 +129,8 @@ data Comment = Comment
   , commentReplyText :: Maybe Text
   , commentRawJSON :: Value
   } deriving (Eq, Show)
+
+type CommentID = ID Comment Integer
 
 instance FromJSON Comment where
   parseJSON =
@@ -125,25 +147,6 @@ instance FromJSON Comment where
 
 instance ToJSON Comment where
   toJSON Comment {commentRawJSON} = toJSON commentRawJSON
-
-data Picture = Picture
-  { pictureID :: PictureID
-  , pictureBytes :: Maybe BSL.ByteString
-  } deriving (Eq)
-
-type PictureID = ID Picture Text
-
-instance Show Picture where
-  show Picture {pictureID = ID t, pictureBytes = b} =
-    "Picture { pictureID = " ++
-    show t ++ ", pictureBytes = <" ++ show (BSL.length <$> b) ++ " bytes> }"
-
-instance ToJSON Picture where
-  toJSON Picture {pictureID} = object ["pictureID" .= toJSON pictureID]
-
-instance FromJSON Picture where
-  parseJSON =
-    withObject "Picture" $ \o -> Picture <$> (o .: "pictureID") <*> pure Nothing
 
 newtype StatusListResponse = StatusListResponse
   { statusListResponseStatuses :: [Status]
