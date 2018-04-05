@@ -27,7 +27,8 @@ _debugComments statusID = do
 _debugDownloadPhoto :: Text -> IO ()
 _debugDownloadPhoto pidT = do
   c <- getClient
-  API.Picture {pictureBytes = bytesM} <- API.downloadPicture c (API.ID pidT)
+  let pid = API.ID pidT
+  API.Picture {_pictureBytes = bytesM} <- API.downloadPicture c pid
   case bytesM of
     Just bytes -> BSL.writeFile "image.jpg" bytes
     Nothing -> putStrLn "Huh? No picture here."

@@ -30,11 +30,11 @@ spec =
     describe "the picture type" $ do
       it "can be round-tripped only if there are no bytes" $ do
         let pid = ID "abc"
-            p = Picture {pictureID = pid, pictureBytes = Nothing}
-            pb = Picture {pictureID = pid, pictureBytes = Just "123"}
+            p = Picture {_pictureIdentifier = pid, _pictureBytes = Nothing}
+            pb = Picture {_pictureIdentifier = pid, _pictureBytes = Just "123"}
         parseEither parseJSON (toJSON p) `shouldBe` Right p
         parseEither parseJSON (toJSON pb) `shouldBe` Right p
     describe "the user type" $ do
       before sampleUserIO $ do
-        it "can be round-tripped through JSON" $ \user -> do
-          parseEither parseJSON (toJSON user) `shouldBe` Right user
+        it "can be round-tripped through JSON" $ \u -> do
+          parseEither parseJSON (toJSON u) `shouldBe` Right u

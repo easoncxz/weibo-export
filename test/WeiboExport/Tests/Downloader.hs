@@ -4,6 +4,7 @@ import Control.Monad
 import Data.Aeson
 import Test.Hspec
 
+import API.Types
 import Downloader
 import WeiboExport.Tests.SampleData
 
@@ -15,7 +16,10 @@ spec = do
         (do (sn, sd) <- sampleStatusIO
             c <- sampleCommentIO
             let p = samplePictureWithoutBytes
-            return [DeepStatus sn [c] [p], DeepStatus sd [c] [p]]) $ do
+            return
+              [ DeepStatus (TagNormalStatus sn) [c] [p]
+              , DeepStatus (TagDeletedStatus sd) [c] [p]
+              ]) $ do
         it "exists" $ \ss -> do
           forM_ ss $ \ds@(DeepStatus s cs ps) -> do
             encode ds `shouldBe`

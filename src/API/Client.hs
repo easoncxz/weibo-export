@@ -63,15 +63,15 @@ newWeiboApiClient cookie = do
   clientEnv <- newClientEnv
   let getStatusesM :<|> getCommentsM = client weiboApi (Just cookie)
       getStatuses mbPage = do
-        fmap (fmap statusListResponseStatuses) . liftIO $
+        fmap (fmap _statusListResponseStatuses) . liftIO $
           runClientM (getStatusesM (Just "cards") mbPage) clientEnv
       getComments statusID mbPage =
-        fmap (fmap commentListResponseComments) . liftIO $
+        fmap (fmap _commentListResponseComments) . liftIO $
         runClientM (getCommentsM (Just statusID) mbPage) clientEnv
       downloadPicture pid =
         liftIO $ do
           r <- Wreq.get (largeJpgUrl pid)
-          let pictureID = pid
-              pictureBytes = Just (r ^. Wreq.responseBody)
+          let _pictureIdentifier = pid
+              _pictureBytes = Just (r ^. Wreq.responseBody)
           return Picture {..}
   return WeiboApiClient {..}
