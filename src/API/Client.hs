@@ -62,12 +62,12 @@ newWeiboApiClient cookie = do
         return $ mkClientEnv settings (BaseUrl Https "m.weibo.cn" 443 "")
   clientEnv <- newClientEnv
   let getStatusesM :<|> getCommentsM = client weiboApi (Just cookie)
-      getStatuses mbPage = do
-        fmap (fmap _statusListResponseStatuses) . liftIO $
-          runClientM (getStatusesM (Just "cards") mbPage) clientEnv
+      getStatuses mbPage =
+        fmap (view statuses) <$>
+        liftIO (runClientM (getStatusesM (Just "cards") mbPage) clientEnv)
       getComments statusID mbPage =
-        fmap (fmap _commentListResponseComments) . liftIO $
-        runClientM (getCommentsM (Just statusID) mbPage) clientEnv
+        fmap (view comments) <$>
+        liftIO (runClientM (getCommentsM (Just statusID) mbPage) clientEnv)
       downloadPicture pid =
         liftIO $ do
           r <- Wreq.get (largeJpgUrl pid)

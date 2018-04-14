@@ -1,6 +1,8 @@
 module API.Types
   ( ID(..)
   , Status(..)
+  , _TagNormalStatus
+  , _TagDeletedStatus
   , StatusID
   , NormalStatus(..)
   , DeletedStatus(..)
