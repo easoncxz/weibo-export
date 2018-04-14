@@ -3,13 +3,15 @@
 
 module API.Client
   ( WeiboApiClient(..)
+  , WeiboApiM
   , newWeiboApiClient
   , Cookie(..)
   , largeJpgUrl
   ) where
 
+import Control.Error.Util (hoistEither)
 import Control.Lens
-import Control.Monad.IO.Class
+import Control.Monad.Except
 import qualified Data.ByteString.UTF8 as BS8
 import Data.Monoid ((<>))
 import Data.Proxy
@@ -45,13 +47,12 @@ largeJpgUrl (ID pid) =
   "https://ww1.sinaimg.cn/large/" <> HTTP.urlEncode True (T.encodeUtf8 pid) <>
   ".jpg"
 
+type WeiboApiM a = ExceptT ServantError IO a
+
 data WeiboApiClient = WeiboApiClient
-  { getStatuses :: forall m. MonadIO m =>
-                               Maybe Int -> m (Either ServantError [Status])
-  , getComments :: forall m. MonadIO m =>
-                               StatusID -> Maybe Int -> m (Either ServantError [Comment])
-  , downloadPicture :: forall m. MonadIO m =>
-                                   PictureID -> m Picture
+  { getStatuses :: Maybe Int -> WeiboApiM [Status]
+  , getComments :: StatusID -> Maybe Int -> WeiboApiM [Comment]
+  , downloadPicture :: PictureID -> WeiboApiM Picture
   }
 
 newWeiboApiClient :: Cookie -> IO WeiboApiClient
@@ -63,10 +64,10 @@ newWeiboApiClient cookie = do
   clientEnv <- newClientEnv
   let getStatusesM :<|> getCommentsM = client weiboApi (Just cookie)
       getStatuses mbPage =
-        fmap (view statuses) <$>
+        fmap (view statuses) . hoistEither =<<
         liftIO (runClientM (getStatusesM (Just "cards") mbPage) clientEnv)
       getComments statusID mbPage =
-        fmap (view comments) <$>
+        fmap (view comments) . hoistEither =<<
         liftIO (runClientM (getCommentsM (Just statusID) mbPage) clientEnv)
       downloadPicture pid =
         liftIO $ do
