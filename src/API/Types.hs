@@ -94,7 +94,7 @@ data NormalStatus = NormalStatus
   { _normalStatusIdentifier :: StatusID
   , _normalStatusCreatedAt :: Text
   , _normalStatusText :: Text
-  , _normalStatusPicIDs :: Maybe [PictureID]
+  , _normalStatusPicIDs :: [PictureID]
   , _normalStatusUser :: User
   , _normalStatusRetweetedStatus :: Maybe Status
   , _normalStatusCommentsCount :: Int
@@ -140,7 +140,7 @@ instance FromJSON NormalStatus where
           _normalStatusIdentifier <- o .: "idstr"
           _normalStatusCreatedAt <- o .: "created_at"
           _normalStatusText <- o .: "text"
-          _normalStatusPicIDs <- o .:? "pic_ids"
+          _normalStatusPicIDs <- o .:? "pic_ids" .!= []
           _normalStatusUser <- o .: "user"
           _normalStatusRetweetedStatus <- o .:? "retweeted_status"
           _normalStatusCommentsCount <- o .: "comments_count"
