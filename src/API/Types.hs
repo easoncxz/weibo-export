@@ -89,13 +89,19 @@ instance FromJSON User where
 instance ToJSON User where
   toJSON = toJSON . _userRawJSON
 
+data RetweetedStatus = RetweetedStatus
+  { _retweetedStatusIdentifier :: StatusID
+  , _retweetedStatusText :: Text
+  , _retweetedStatusRawJSON :: Value
+  } deriving (Eq, Show)
+
 data NormalStatus = NormalStatus
   { _normalStatusIdentifier :: StatusID
   , _normalStatusCreatedAt :: Text
   , _normalStatusText :: Text
   , _normalStatusPicIDs :: [PictureID]
   , _normalStatusUser :: User
-  , _normalStatusRetweetedStatus :: Maybe Status
+  , _normalStatusRetweetedStatus :: Maybe RetweetedStatus
   , _normalStatusCommentsCount :: Int
   , _normalStatusRawJSON :: Value
   } deriving (Eq, Show)
@@ -117,6 +123,8 @@ makeFields ''NormalStatus
 
 makeFields ''DeletedStatus
 
+makeFields ''RetweetedStatus
+
 makePrisms ''Status
 
 instance FromJSON DeletedStatus where
@@ -126,6 +134,14 @@ instance FromJSON DeletedStatus where
       _deletedStatusIdentifier <- o .: "idstr"
       _deletedStatusCreatedAt <- o .: "created_at"
       return DeletedStatus {..}
+
+instance FromJSON RetweetedStatus where
+  parseJSON =
+    withObject "RetweetedStatus" $ \o -> do
+      let _retweetedStatusRawJSON = Object o
+      _retweetedStatusIdentifier <- o .: "idstr"
+      _retweetedStatusText <- o .: "text"
+      return RetweetedStatus {..}
 
 instance FromJSON NormalStatus where
   parseJSON =

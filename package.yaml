@@ -74,6 +74,8 @@ executables:
     - -Wall
     dependencies:
     - base
+    - text
+    - servant-client
     - weibo-export
 
 tests:
