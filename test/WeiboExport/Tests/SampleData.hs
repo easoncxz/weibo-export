@@ -1,16 +1,30 @@
 module WeiboExport.Tests.SampleData where
 
+import Control.Lens
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
 
 import API.Types
 
-sampleStatusListResponseIO :: IO StatusListResponse
-sampleStatusListResponseIO = do
-  bs <- BSL.readFile "test/sample-data/status-list-response.json"
-  case eitherDecode bs of
+sampleStatusListResponseListIO :: IO [StatusListResponse]
+sampleStatusListResponseListIO = do
+  let files =
+        [ "test/sample-data/status-list-response.json"
+        , "test/sample-data/status-list-response-with-unauthorised.json"
+        ]
+  result <-
+    fmap sequence . sequence . fmap (fmap eitherDecode . BSL.readFile) $ files
+  case result of
     Left msg -> fail msg
-    Right response -> return response
+    Right responses -> return responses
+
+sampleStatusListResponseIO :: IO StatusListResponse
+sampleStatusListResponseIO = head <$> sampleStatusListResponseListIO
+
+sampleStatusesIO :: Prism' Status b -> IO [b]
+sampleStatusesIO f = do
+  responses :: [StatusListResponse] <- sampleStatusListResponseListIO
+  return (concatMap (toListOf (statuses . each . f)) responses)
 
 sampleStatusIO :: IO (NormalStatus, DeletedStatus)
 sampleStatusIO = do

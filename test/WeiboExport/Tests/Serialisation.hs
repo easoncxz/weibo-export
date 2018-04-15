@@ -15,7 +15,7 @@ spec :: Spec
 spec =
   describe "serialisation of API datatypes" $ do
     describe "the status-list response" $ do
-      it "can be decoded" $ void sampleStatusListResponseIO
+      it "can be decoded" $ void sampleStatusListResponseListIO
     describe "the status type" $ do
       before sampleStatusIO $ do
         it "can be round-triped" $ \(normal, deleted) -> do

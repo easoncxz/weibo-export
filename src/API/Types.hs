@@ -32,8 +32,8 @@ module API.Types
   , user
   ) where
 
+import Control.Applicative
 import Control.Lens hiding ((.=))
-import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
 import Data.Text (Text)
@@ -144,7 +144,9 @@ instance FromJSON Status where
   parseJSON =
     withObject "Status" $ \o ->
       o .:? "deleted" >>= \case
-        Nothing -> TagNormalStatus <$> parseJSON (Object o)
+        Nothing ->
+          TagNormalStatus <$> parseJSON (Object o) <|>
+          TagDeletedStatus <$> parseJSON (Object o)
         Just ("1" :: Text) -> TagDeletedStatus <$> parseJSON (Object o)
         Just other -> fail $ "Unrecognised value at $.deleted: " ++ show other
 
@@ -214,5 +216,9 @@ makeFields ''CommentListResponse
 
 instance FromJSON CommentListResponse where
   parseJSON =
-    withObject "a response holding some comments" $
-    return . CommentListResponse <=< (.: "data") <=< (.: "data")
+    withObject "a response holding some comments" $ \outer ->
+      (outer .: "ok") >>= \case
+        (1 :: Int) ->
+          (outer .: "data") >>= \inner ->
+            CommentListResponse <$> (inner .: "data")
+        e -> fail $ "CommentListResponse outer data failed, ok: " ++ show e
