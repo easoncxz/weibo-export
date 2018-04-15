@@ -21,6 +21,10 @@ spec =
         it "can be round-triped" $ \(normal, deleted) -> do
           parseEither parseJSON (toJSON normal) `shouldBe` Right normal
           parseEither parseJSON (toJSON deleted) `shouldBe` Right deleted
+          parseEither parseJSON (toJSON (TagNormalStatus normal)) `shouldBe`
+            Right (TagNormalStatus normal)
+          parseEither parseJSON (toJSON (TagDeletedStatus deleted)) `shouldBe`
+            Right (TagDeletedStatus deleted)
     describe "the comment-list response" $ do
       it "can be decoded" $ void sampleCommentListResponseIO
     describe "the comment type" $ do

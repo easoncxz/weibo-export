@@ -39,3 +39,10 @@ downloadDeepStatus =
       return DeepStatus {..}
     deepStatusStatus@(TagDeletedStatus _) -> do
       return (DeepStatus deepStatusStatus [] [])
+
+downloadEverything ::
+     (MonadError ServantError m, MonadReader WeiboApiClient m, MonadIO m)
+  => m [DeepStatus]
+downloadEverything = do
+  ss <- downloadAllPages getStatuses
+  sequence (downloadDeepStatus <$> ss)
