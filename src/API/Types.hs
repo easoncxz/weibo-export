@@ -32,7 +32,6 @@ module API.Types
   , user
   ) where
 
-import Control.Applicative
 import Control.Lens hiding ((.=))
 import Control.Monad
 import Data.Aeson
@@ -123,34 +122,31 @@ makePrisms ''Status
 instance FromJSON DeletedStatus where
   parseJSON =
     withObject "DeletedStatus" $ \o -> do
-      o .:? "deleted" >>= \case
-        Just ("1" :: Text) -> do
-          let _deletedStatusRawJSON = Object o
-          _deletedStatusIdentifier <- o .: "idstr"
-          _deletedStatusCreatedAt <- o .: "created_at"
-          return DeletedStatus {..}
-        other -> fail $ "Unrecognised value at $.deleted: " ++ show other
+      let _deletedStatusRawJSON = Object o
+      _deletedStatusIdentifier <- o .: "idstr"
+      _deletedStatusCreatedAt <- o .: "created_at"
+      return DeletedStatus {..}
 
 instance FromJSON NormalStatus where
   parseJSON =
     withObject "NormalStatus" $ \o -> do
-      o .:? "deleted" >>= \case
-        Nothing -> do
-          let _normalStatusRawJSON = Object o
-          _normalStatusIdentifier <- o .: "idstr"
-          _normalStatusCreatedAt <- o .: "created_at"
-          _normalStatusText <- o .: "text"
-          _normalStatusPicIDs <- o .:? "pic_ids" .!= []
-          _normalStatusUser <- o .: "user"
-          _normalStatusRetweetedStatus <- o .:? "retweeted_status"
-          _normalStatusCommentsCount <- o .: "comments_count"
-          return NormalStatus {..}
-        (other :: Maybe Text) ->
-          fail $ "Unrecognised value at $.deleted: " ++ show other
+      let _normalStatusRawJSON = Object o
+      _normalStatusIdentifier <- o .: "idstr"
+      _normalStatusCreatedAt <- o .: "created_at"
+      _normalStatusText <- o .: "text"
+      _normalStatusPicIDs <- o .:? "pic_ids" .!= []
+      _normalStatusUser <- o .: "user"
+      _normalStatusRetweetedStatus <- o .:? "retweeted_status"
+      _normalStatusCommentsCount <- o .: "comments_count"
+      return NormalStatus {..}
 
 instance FromJSON Status where
-  parseJSON v =
-    TagNormalStatus <$> parseJSON v <|> TagDeletedStatus <$> parseJSON v
+  parseJSON =
+    withObject "Status" $ \o ->
+      o .:? "deleted" >>= \case
+        Nothing -> TagNormalStatus <$> parseJSON (Object o)
+        Just ("1" :: Text) -> TagDeletedStatus <$> parseJSON (Object o)
+        Just other -> fail $ "Unrecognised value at $.deleted: " ++ show other
 
 instance ToJSON DeletedStatus where
   toJSON = toJSON . view rawJSON

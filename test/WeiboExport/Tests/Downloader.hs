@@ -25,8 +25,8 @@ spec = do
             encode ds `shouldBe`
               encode
                 (object
-                   [ "statusPerSe" .= toJSON s
-                   , "statusComments" .= toJSON cs
-                   , "statusPictures" .= toJSON ps
+                   [ "status" .= toJSON s
+                   , "comments" .= toJSON cs
+                   , "pictures" .= toJSON ps
                    ])
         it "round-trips" $ \ds -> decode (encode ds) `shouldBe` Just ds

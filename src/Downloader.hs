@@ -1,16 +1,14 @@
-{-# LANGUAGE DeriveGeneric #-}
-
 module Downloader where
 
-import Control.Lens
+import Control.Lens hiding ((.=))
 import Control.Monad.Except
 import Control.Monad.Reader
-import qualified Data.Aeson as Aeson
+import Data.Aeson
 import GHC.Generics (Generic)
 import Servant.Client (ServantError)
 
 import API.Client
-import API.Types
+import API.Types hiding (comments)
 
 data DeepStatus = DeepStatus
   { deepStatusStatus :: Status
@@ -18,9 +16,18 @@ data DeepStatus = DeepStatus
   , deepStatusPictures :: [Picture]
   } deriving (Eq, Show, Generic)
 
-instance Aeson.ToJSON DeepStatus
+instance ToJSON DeepStatus where
+  toJSON DeepStatus {..} =
+    object
+      [ "status" .= deepStatusStatus
+      , "comments" .= deepStatusComments
+      , "pictures" .= deepStatusPictures
+      ]
 
-instance Aeson.FromJSON DeepStatus
+instance FromJSON DeepStatus where
+  parseJSON =
+    withObject "DeepStatus" $ \o ->
+      DeepStatus <$> (o .: "status") <*> (o .: "comments") <*> (o .: "pictures")
 
 downloadAllPages :: Applicative m => (Maybe Int -> m [a]) -> m [a]
 downloadAllPages action = concat <$> traverse (action . Just) [1 ..]
