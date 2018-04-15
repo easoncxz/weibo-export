@@ -1,8 +1,11 @@
 module Logging
-  ( logError
+  ( logInfo
   ) where
 
 import Control.Monad.IO.Class
+import System.IO
 
-logError :: MonadIO m => String -> m ()
-logError = liftIO . putStrLn
+logInfo :: (MonadIO m, Show a) => m a -> m a
+logInfo v = do
+  liftIO . hPutStrLn stderr . show =<< v
+  v
