@@ -32,7 +32,9 @@ import Servant.API
 import Servant.Client
 
 import API.Types
-import Logging
+
+logInfo :: a -> a
+logInfo = id
 
 newtype Cookie = Cookie
   { unCookie :: Text
