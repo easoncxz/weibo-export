@@ -13,20 +13,16 @@ spec = do
   describe "Downloader" $ do
     describe "DeepStatus" $ do
       before
-        (do (sn, sd) <- sampleStatusIO
-            c <- sampleCommentIO
+        (do ns <- sampleStatusesIO _TagNormalStatus
+            ds <- sampleStatusesIO _TagDeletedStatus
+            cs <- sampleCommentListIO
             let p = samplePictureWithoutBytes
-            return
-              [ DeepStatus (TagNormalStatus sn) [c] [p]
-              , DeepStatus (TagDeletedStatus sd) [c] [p]
-              ]) $ do
-        it "exists" $ \ss -> do
-          forM_ ss $ \ds@(DeepStatus s cs ps) -> do
+            return $
+              [DeepStatus (TagNormalStatus n) cs [p] | n <- ns] ++
+              [DeepStatus (TagDeletedStatus d) cs [p] | d <- ds]) $ do
+        it "exists" $
+          mapM_ $ \ds@(DeepStatus s cs ps) -> do
             encode ds `shouldBe`
               encode
-                (object
-                   [ "status" .= toJSON s
-                   , "comments" .= toJSON cs
-                   , "pictures" .= toJSON ps
-                   ])
+                (object ["status" .= s, "comments" .= cs, "pictures" .= ps])
         it "round-trips" $ \ds -> decode (encode ds) `shouldBe` Just ds

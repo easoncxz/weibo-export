@@ -93,5 +93,6 @@ tests:
     - directory
     - filepath
     - hspec
+    - lens
     - mtl
     - weibo-export
