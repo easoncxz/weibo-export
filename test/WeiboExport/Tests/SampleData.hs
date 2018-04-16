@@ -8,8 +8,7 @@ import API.Types
 
 sampleFilesIO :: FromJSON a => [FilePath] -> IO [a]
 sampleFilesIO files = do
-  result <-
-    fmap sequence . sequence . fmap (fmap eitherDecode . BSL.readFile) $ files
+  result <- fmap sequence . traverse (fmap eitherDecode . BSL.readFile) $ files
   case result of
     Left msg -> fail msg
     Right responses -> return responses
@@ -22,7 +21,7 @@ sampleStatusListResponseListIO =
     ]
 
 sampleCommentListResponseListIO :: IO [CommentListResponse]
-sampleCommentListResponseListIO = do
+sampleCommentListResponseListIO =
   sampleFilesIO ["test/sample-data/comment-list-response.json"]
 
 sampleStatusesIO :: Prism' Status b -> IO [b]
@@ -34,7 +33,7 @@ sampleUsersIO = map (view user) <$> sampleStatusesIO _TagNormalStatus
 
 sampleCommentListIO :: IO [Comment]
 sampleCommentListIO =
-  concat . fmap (view comments) <$> sampleCommentListResponseListIO
+  concatMap (view comments) <$> sampleCommentListResponseListIO
 
 samplePictureWithoutBytes :: Picture
 samplePictureWithoutBytes = Picture (ID "abc") Nothing

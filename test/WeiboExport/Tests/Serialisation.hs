@@ -34,19 +34,19 @@ spec =
     describe "CommentListResponse" $
       it "can be decoded" $ void sampleCommentListResponseListIO
     describe "Comment" $
-      before sampleCommentListIO $ do
-        it "can be round-triped" $
-          mapM_
-            (\comment ->
-               parseEither parseJSON (toJSON comment) `shouldBe` Right comment)
-    describe "Picture" $ do
+      before sampleCommentListIO $
+      it "can be round-triped" $
+      mapM_
+        (\comment ->
+           parseEither parseJSON (toJSON comment) `shouldBe` Right comment)
+    describe "Picture" $
       it "can be round-tripped only if there are no bytes" $ do
         let pid = ID "abc"
             p = Picture {_pictureIdentifier = pid, _pictureBytes = Nothing}
             pb = Picture {_pictureIdentifier = pid, _pictureBytes = Just "123"}
         parseEither parseJSON (toJSON p) `shouldBe` Right p
         parseEither parseJSON (toJSON pb) `shouldBe` Right p
-    describe "User" $ do
-      before sampleUsersIO $ do
-        it "can be round-tripped through JSON" $
-          mapM_ $ \u -> do parseEither parseJSON (toJSON u) `shouldBe` Right u
+    describe "User" $
+      before sampleUsersIO $
+      it "can be round-tripped through JSON" $
+      mapM_ $ \u -> parseEither parseJSON (toJSON u) `shouldBe` Right u

@@ -8,7 +8,7 @@ import GHC.Generics (Generic)
 import Servant.Client (ServantError)
 
 import API.Client
-import API.Types hiding (comments)
+import API.Types
 
 data DeepStatus = DeepStatus
   { deepStatusStatus :: Status
@@ -44,7 +44,7 @@ downloadDeepStatus =
       deepStatusPictures <-
         sequence [downloadPicture p | p <- normalStatus ^. picIDs]
       return DeepStatus {..}
-    deepStatusStatus@(TagDeletedStatus _) -> do
+    deepStatusStatus@(TagDeletedStatus _) ->
       return (DeepStatus deepStatusStatus [] [])
 
 getDeepStatuses ::

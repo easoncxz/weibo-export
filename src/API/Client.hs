@@ -1,5 +1,4 @@
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE LambdaCase #-}
 
 module API.Client
   ( Cookie(..)
@@ -110,8 +109,9 @@ downloadPicture ::
      (MonadIO m, MonadError ServantError m) => PictureID -> m Picture
 downloadPicture pid = do
   r <- liftIO $ Wreq.get (largeJpgUrl pid)
-  when (r ^. Wreq.responseStatus . Wreq.statusCode /= 200) $ do
-    throwError . FailureResponse . servantResponseFromWreq $ r
+  when
+    (r ^. Wreq.responseStatus . Wreq.statusCode /= 200)
+    (throwError . FailureResponse . servantResponseFromWreq $ r)
   let _pictureIdentifier = pid
       _pictureBytes = Just (r ^. Wreq.responseBody)
   logInfo $ return Picture {..}

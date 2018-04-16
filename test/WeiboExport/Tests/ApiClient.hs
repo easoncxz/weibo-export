@@ -6,7 +6,7 @@ import API.Client
 import API.Types
 
 spec :: Spec
-spec = do
-  describe "the picture URL" $ do
-    it "renders" $ do
-      largeJpgUrl (ID "abc") `shouldBe` "https://ww1.sinaimg.cn/large/abc.jpg"
+spec =
+  describe "the picture URL" $
+  it "renders" $
+  largeJpgUrl (ID "abc") `shouldBe` "https://ww1.sinaimg.cn/large/abc.jpg"

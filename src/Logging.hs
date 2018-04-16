@@ -7,5 +7,5 @@ import System.IO
 
 logInfo :: (MonadIO m, Show a) => m a -> m a
 logInfo v = do
-  liftIO . hPutStrLn stderr . show =<< v
+  liftIO . hPrint stderr =<< v
   v

@@ -34,6 +34,7 @@ module API.Types
 
 import Control.Applicative
 import Control.Lens hiding ((.=))
+import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
 import Data.Text (Text)
@@ -200,10 +201,12 @@ newtype StatusListResponse = StatusListResponse
 makeFields ''StatusListResponse
 
 instance FromJSON StatusListResponse where
-  parseJSON = do
-    withArray "a one-element array" $ \a ->
-      V.headM a >>=
-      (withObject "a mod/page_list response" $ \o -> do
+  parseJSON =
+    withArray "a one-element array" $
+    V.headM >=>
+    withObject
+      "a mod/page_list response"
+      (\o -> do
          cards :: [Object] <- o .: "card_group"
          ss <- sequence [c .: "mblog" | c <- cards]
          return (StatusListResponse ss))
