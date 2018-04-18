@@ -37,13 +37,21 @@ import Control.Lens hiding ((.=))
 import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
+import Data.String.ToString
 import Data.Text (Text)
 import qualified Data.Vector as V
 import Servant.API
 
 newtype ID a i = ID
   { getID :: i
-  } deriving (Eq, Show, FromJSON, ToJSON, FromHttpApiData, ToHttpApiData)
+  } deriving ( Eq
+             , Show
+             , ToString
+             , FromJSON
+             , ToJSON
+             , FromHttpApiData
+             , ToHttpApiData
+             )
 
 data Picture = Picture
   { _pictureIdentifier :: PictureID
@@ -117,6 +125,8 @@ type StatusID = ID Status Text
 makeFields ''NormalStatus
 
 makeFields ''DeletedStatus
+
+makeFields ''Status
 
 makePrisms ''Status
 

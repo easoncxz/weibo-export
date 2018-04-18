@@ -1,7 +1,5 @@
 module Main where
 
-import qualified Data.Aeson.Encode.Pretty as A
-import qualified Data.ByteString.Lazy as BSL
 import qualified Data.Text as T
 import System.Environment
 import System.Exit
@@ -16,13 +14,16 @@ main = do
       putStrLn "Pass cookie as first argument"
       exitWith (ExitFailure 1)
     (_:[]) -> do
-      putStrLn "Pass output filename as second argument"
+      putStrLn "Pass weibo status output directory as second argument"
       exitWith (ExitFailure 1)
-    (cookie:outfile:_) -> do
+    (_:_:[]) -> do
+      putStrLn "Pass image output directory as second argument"
+      exitWith (ExitFailure 1)
+    (cookie:statusDir:imgDir:_) -> do
       client <- newWeiboApiClient (Cookie (T.pack cookie))
       runWeiboClientM downloadEverything client >>= \case
         Left e -> do
           putStrLn "Failed with some ServantError after some retries"
           print e
           exitWith (ExitFailure 13)
-        Right ds -> BSL.writeFile outfile (A.encodePretty ds)
+        Right ds -> saveDeepStatuses statusDir imgDir ds

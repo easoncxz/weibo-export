@@ -45,9 +45,12 @@ library:
   - -Wall
   dependencies:
   - aeson
+  - aeson-pretty
   - base >= 4.7 && < 5
   - bytestring
   - containers
+  - directory
+  - filepath
   - http-client
   - http-client-tls
   - http-types
@@ -57,6 +60,7 @@ library:
   - servant
   - servant-client
   - text
+  - tostring
   - turtle
   - utf8-string
   - vector
@@ -73,7 +77,6 @@ executables:
     - -with-rtsopts=-N
     - -Wall
     dependencies:
-    - aeson-pretty
     - base
     - safe
     - bytestring

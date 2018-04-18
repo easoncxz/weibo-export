@@ -1,11 +1,20 @@
 module Downloader where
 
+import Control.Applicative
 import Control.Lens hiding ((.=))
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Aeson
+import Data.Aeson.Encode.Pretty (encodePretty)
+import qualified Data.ByteString.Lazy as BSL
+import Data.Maybe
+import Data.Monoid
+import Data.String.ToString
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Servant.Client (ServantError(DecodeFailure))
+import System.Directory
+import System.FilePath.Posix
 
 import API.Client
 import API.Types
@@ -16,6 +25,8 @@ data DeepStatus = DeepStatus
   , deepStatusComments :: [Comment]
   , deepStatusPictures :: [Picture]
   } deriving (Eq, Show, Generic)
+
+makeFields ''DeepStatus
 
 instance ToJSON DeepStatus where
   toJSON DeepStatus {..} =
@@ -72,3 +83,23 @@ downloadEverything ::
 downloadEverything = do
   ss <- downloadAllPages getStatuses
   sequence (downloadDeepStatus <$> ss)
+
+saveDeepStatuses :: FilePath -> FilePath -> [DeepStatus] -> IO ()
+saveDeepStatuses statusDir imgDir ds = do
+  createDirectoryIfMissing True statusDir
+  createDirectoryIfMissing True imgDir
+  forM_ ds $ \(d@(DeepStatus s cs ps)) -> do
+    let statusIDMaybe =
+          s ^? _TagNormalStatus . identifier <|> s ^? _TagDeletedStatus .
+          identifier
+        statusIDText = statusIDMaybe & fromJust & getID & T.unpack
+    BSL.writeFile
+      (statusDir </> "status-" <> statusIDText <> ".json")
+      (encodePretty d)
+    BSL.writeFile
+      (statusDir </> "status-" <> statusIDText <> "-comments.json")
+      (encodePretty cs)
+    forM_ ps $ \(Picture pid bytesM) ->
+      case bytesM of
+        Nothing -> logError $ "Picture " ++ show pid ++ " is missing bytes"
+        Just bs -> BSL.writeFile (imgDir </> toString pid ++ ".jpg") bs
