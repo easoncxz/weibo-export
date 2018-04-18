@@ -73,7 +73,11 @@ executables:
     - -with-rtsopts=-N
     - -Wall
     dependencies:
+    - aeson-pretty
     - base
+    - safe
+    - bytestring
+    - text
     - weibo-export
 
 tests:

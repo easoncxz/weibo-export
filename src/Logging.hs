@@ -6,8 +6,8 @@ import System.IO
 logInfoM :: (MonadIO m, Show a) => m a -> m a
 logInfoM m = do
   v <- m
-  liftIO . hPrint stderr $ v
+  liftIO . hPutStrLn stderr . ("[INFO] " ++) . show $ v
   return v
 
 logError :: (MonadIO m, Show a) => a -> m ()
-logError = liftIO . hPrint stderr
+logError = liftIO . hPutStrLn stderr . ("[ERROR] " ++) . show
