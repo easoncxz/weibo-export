@@ -42,7 +42,7 @@ downloadAllPages action =
             case e of
               DecodeFailure _ _ -> return []
               other -> do
-                _ <- logInfo (return other)
+                logError other
                 go xss page (retries - 1)
         if null xs
           then return (concat (reverse xss))

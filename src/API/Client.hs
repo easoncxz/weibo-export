@@ -31,12 +31,7 @@ import Servant.API
 import Servant.Client
 
 import API.Types
-
-logInfo :: (Show b, MonadIO m) => m b -> m b
-logInfo m = do
-  v <- m
-  liftIO $ print v
-  return v
+import Logging
 
 newtype Cookie = Cookie
   { unCookie :: Text
@@ -78,7 +73,7 @@ getStatuses ::
 getStatuses mbPage = do
   c <- ask
   fmap (view statuses) . liftEither =<<
-    liftIO (logInfo (weiboApiGetStatuses c mbPage))
+    liftIO (logInfoM (weiboApiGetStatuses c mbPage))
 
 getComments ::
      (MonadError ServantError m, MonadIO m, MonadReader WeiboApiClient m)
@@ -88,7 +83,7 @@ getComments ::
 getComments statusID mbPage = do
   c <- ask
   fmap (view comments) . liftEither =<<
-    liftIO (logInfo (weiboApiGetComments c statusID mbPage))
+    liftIO (logInfoM (weiboApiGetComments c statusID mbPage))
 
 runWeiboClientM :: WeiboApiM a -> WeiboApiClient -> IO (Either ServantError a)
 runWeiboClientM = runReaderT . runExceptT
@@ -117,4 +112,4 @@ downloadPicture pid = do
     (throwError . FailureResponse . servantResponseFromWreq $ r)
   let _pictureIdentifier = pid
       _pictureBytes = Just (r ^. Wreq.responseBody)
-  logInfo $ return Picture {..}
+  logInfoM $ return Picture {..}
