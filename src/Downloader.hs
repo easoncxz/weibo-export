@@ -29,8 +29,14 @@ instance FromJSON DeepStatus where
     withObject "DeepStatus" $ \o ->
       DeepStatus <$> (o .: "status") <*> (o .: "comments") <*> (o .: "pictures")
 
-downloadAllPages :: Applicative m => (Maybe Int -> m [a]) -> m [a]
-downloadAllPages action = concat <$> traverse (action . Just) [1 ..]
+downloadAllPages :: MonadError e m => (Maybe Int -> m [a]) -> m [a]
+downloadAllPages action =
+  let go xss n = do
+        xs <- action (Just n) `catchError` \_e -> return []
+        if null xs
+          then return (concat (reverse xss))
+          else go (xs : xss) (n + 1)
+   in go [] 1
 
 downloadDeepStatus ::
      (MonadError ServantError m, MonadReader WeiboApiClient m, MonadIO m)

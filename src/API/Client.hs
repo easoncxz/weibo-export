@@ -32,8 +32,11 @@ import Servant.Client
 
 import API.Types
 
-logInfo :: a -> a
-logInfo = id
+logInfo :: (Show b, MonadIO m) => m b -> m b
+logInfo m = do
+  v <- m
+  liftIO $ print v
+  return v
 
 newtype Cookie = Cookie
   { unCookie :: Text
