@@ -5,10 +5,11 @@ import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Aeson
 import GHC.Generics (Generic)
-import Servant.Client (ServantError)
+import Servant.Client (ServantError(DecodeFailure))
 
 import API.Client
 import API.Types
+import Logging
 
 data DeepStatus = DeepStatus
   { deepStatusStatus :: Status
@@ -29,14 +30,24 @@ instance FromJSON DeepStatus where
     withObject "DeepStatus" $ \o ->
       DeepStatus <$> (o .: "status") <*> (o .: "comments") <*> (o .: "pictures")
 
-downloadAllPages :: MonadError e m => (Maybe Int -> m [a]) -> m [a]
+downloadAllPages ::
+     forall m a. (MonadError ServantError m, MonadIO m)
+  => (Maybe Int -> m [a])
+  -> m [a]
 downloadAllPages action =
-  let go xss n = do
-        xs <- action (Just n) `catchError` \_e -> return []
+  let go :: [[a]] -> Int -> Int -> m [a]
+      go xss page retries = do
+        xs <-
+          action (Just page) `catchError` \e ->
+            case e of
+              DecodeFailure _ _ -> return []
+              other -> do
+                _ <- logInfo (return other)
+                go xss page (retries - 1)
         if null xs
           then return (concat (reverse xss))
-          else go (xs : xss) (n + 1)
-   in go [] 1
+          else go (xs : xss) (page + 1) retries
+   in go [] 1 5
 
 downloadDeepStatus ::
      (MonadError ServantError m, MonadReader WeiboApiClient m, MonadIO m)
@@ -46,20 +57,14 @@ downloadDeepStatus =
   \case
     deepStatusStatus@(TagNormalStatus normalStatus) -> do
       deepStatusComments <-
-        downloadAllPages (getComments (normalStatus ^. identifier))
+        if normalStatus ^. commentsCount > 0
+          then downloadAllPages (getComments (normalStatus ^. identifier))
+          else return []
       deepStatusPictures <-
         sequence [downloadPicture p | p <- normalStatus ^. picIDs]
       return DeepStatus {..}
     deepStatusStatus@(TagDeletedStatus _) ->
       return (DeepStatus deepStatusStatus [] [])
-
-getDeepStatuses ::
-     (MonadError ServantError m, MonadReader WeiboApiClient m, MonadIO m)
-  => Maybe Int
-  -> m [DeepStatus]
-getDeepStatuses mbPage = do
-  ss :: [Status] <- getStatuses mbPage
-  sequence [downloadDeepStatus s | s <- ss]
 
 downloadEverything ::
      (MonadError ServantError m, MonadReader WeiboApiClient m, MonadIO m)
