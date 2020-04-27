@@ -39,11 +39,10 @@ default-extensions:
 - TypeApplications
 - TypeOperators
 
-library:
-  source-dirs: src
-  ghc-options:
-  - -Wall
-  dependencies:
+# Hideous big lump of dependencies all piled into one pile
+# because ghcide cannot handle multiple Cabal components.
+dependencies:
+    # --- library:
   - aeson
   - aeson-pretty
   - base >= 4.7 && < 5
@@ -59,12 +58,34 @@ library:
   - pretty-simple
   - servant
   - servant-client
+  - servant-client-core
   - text
   - tostring
   - turtle
   - utf8-string
   - vector
   - wreq
+    # --- exe:
+  - Cabal
+  - base
+  - safe
+  - bytestring
+  - text
+    # --- tests:
+  - HUnit
+  - aeson
+  - base
+  - bytestring
+  - directory
+  - filepath
+  - hspec
+  - lens
+  - mtl
+
+library:
+  source-dirs: src
+  ghc-options:
+  - -Wall
 
 
 executables:
@@ -77,11 +98,7 @@ executables:
     - -with-rtsopts=-N
     - -Wall
     dependencies:
-    - base
-    - safe
-    - bytestring
-    - text
-    - weibo-export
+      - weibo-export
 
 tests:
   weibo-export-test:
@@ -93,13 +110,4 @@ tests:
     - -with-rtsopts=-N
     - -Wall
     dependencies:
-    - HUnit
-    - aeson
-    - base
-    - bytestring
-    - directory
-    - filepath
-    - hspec
-    - lens
-    - mtl
     - weibo-export

@@ -42,21 +42,25 @@ import Data.Text (Text)
 import qualified Data.Vector as V
 import Servant.API
 
-newtype ID a i = ID
-  { getID :: i
-  } deriving ( Eq
-             , Show
-             , ToString
-             , FromJSON
-             , ToJSON
-             , FromHttpApiData
-             , ToHttpApiData
-             )
+newtype ID a i =
+  ID
+    { getID :: i
+    }
+  deriving ( Eq
+           , Show
+           , ToString
+           , FromJSON
+           , ToJSON
+           , FromHttpApiData
+           , ToHttpApiData
+           )
 
-data Picture = Picture
-  { _pictureIdentifier :: PictureID
-  , _pictureBytes :: Maybe BSL.ByteString
-  } deriving (Eq)
+data Picture =
+  Picture
+    { _pictureIdentifier :: PictureID
+    , _pictureBytes :: Maybe BSL.ByteString
+    }
+  deriving (Eq)
 
 type PictureID = ID Picture Text
 
@@ -75,12 +79,14 @@ instance FromJSON Picture where
   parseJSON =
     withObject "Picture" $ \o -> Picture <$> (o .: "pictureID") <*> pure Nothing
 
-data User = User
-  { _userIdentifier :: UserID
-  , _userScreenName :: Text
-  , _userProfileImageURL :: Text
-  , _userRawJSON :: Value
-  } deriving (Eq, Show)
+data User =
+  User
+    { _userIdentifier :: UserID
+    , _userScreenName :: Text
+    , _userProfileImageURL :: Text
+    , _userRawJSON :: Value
+    }
+  deriving (Eq, Show)
 
 type UserID = ID User Integer
 
@@ -98,22 +104,26 @@ instance FromJSON User where
 instance ToJSON User where
   toJSON = toJSON . _userRawJSON
 
-data NormalStatus = NormalStatus
-  { _normalStatusIdentifier :: StatusID
-  , _normalStatusCreatedAt :: Text
-  , _normalStatusText :: Text
-  , _normalStatusPicIDs :: [PictureID]
-  , _normalStatusUser :: User
-  , _normalStatusRetweetedStatus :: Maybe Status
-  , _normalStatusCommentsCount :: Int
-  , _normalStatusRawJSON :: Value
-  } deriving (Eq, Show)
+data NormalStatus =
+  NormalStatus
+    { _normalStatusIdentifier :: StatusID
+    , _normalStatusCreatedAt :: Text
+    , _normalStatusText :: Text
+    , _normalStatusPicIDs :: [PictureID]
+    , _normalStatusUser :: User
+    , _normalStatusRetweetedStatus :: Maybe Status
+    , _normalStatusCommentsCount :: Int
+    , _normalStatusRawJSON :: Value
+    }
+  deriving (Eq, Show)
 
-data DeletedStatus = DeletedStatus
-  { _deletedStatusIdentifier :: StatusID
-  , _deletedStatusCreatedAt :: Text
-  , _deletedStatusRawJSON :: Value
-  } deriving (Eq, Show)
+data DeletedStatus =
+  DeletedStatus
+    { _deletedStatusIdentifier :: StatusID
+    , _deletedStatusCreatedAt :: Text
+    , _deletedStatusRawJSON :: Value
+    }
+  deriving (Eq, Show)
 
 data Status
   = TagNormalStatus NormalStatus
@@ -173,16 +183,18 @@ instance ToJSON Status where
       TagDeletedStatus s -> toJSON s
       TagNormalStatus s -> toJSON s
 
-data Comment = Comment
-  { _commentIdentifier :: CommentID
-  , _commentUser :: User
-  , _commentCreatedAt :: Text
-  , _commentSource :: Text
-  , _commentText :: Text
-  , _commentReplyID :: Maybe CommentID
-  , _commentReplyText :: Maybe Text
-  , _commentRawJSON :: Value
-  } deriving (Eq, Show)
+data Comment =
+  Comment
+    { _commentIdentifier :: CommentID
+    , _commentUser :: User
+    , _commentCreatedAt :: Text
+    , _commentSource :: Text
+    , _commentText :: Text
+    , _commentReplyID :: Maybe CommentID
+    , _commentReplyText :: Maybe Text
+    , _commentRawJSON :: Value
+    }
+  deriving (Eq, Show)
 
 type CommentID = ID Comment Integer
 
@@ -204,9 +216,11 @@ instance FromJSON Comment where
 instance ToJSON Comment where
   toJSON = toJSON . view rawJSON
 
-newtype StatusListResponse = StatusListResponse
-  { _statusListResponseStatuses :: [Status]
-  } deriving (Eq, Show)
+newtype StatusListResponse =
+  StatusListResponse
+    { _statusListResponseStatuses :: [Status]
+    }
+  deriving (Eq, Show)
 
 makeFields ''StatusListResponse
 
@@ -221,9 +235,11 @@ instance FromJSON StatusListResponse where
          ss <- sequence [c .: "mblog" | c <- cards]
          return (StatusListResponse ss))
 
-newtype CommentListResponse = CommentListResponse
-  { _commentListResponseComments :: [Comment]
-  } deriving (Show)
+newtype CommentListResponse =
+  CommentListResponse
+    { _commentListResponseComments :: [Comment]
+    }
+  deriving (Show)
 
 makeFields ''CommentListResponse
 

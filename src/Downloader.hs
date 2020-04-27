@@ -8,11 +8,10 @@ import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Maybe
-import Data.Monoid
 import Data.String.ToString
 import qualified Data.Text as T
 import GHC.Generics (Generic)
-import Servant.Client (ServantError(DecodeFailure))
+import Servant.Client (ClientError(DecodeFailure))
 import System.Directory
 import System.FilePath.Posix
 
@@ -20,11 +19,13 @@ import API.Client
 import API.Types
 import Logging
 
-data DeepStatus = DeepStatus
-  { deepStatusStatus :: Status
-  , deepStatusComments :: [Comment]
-  , deepStatusPictures :: [Picture]
-  } deriving (Eq, Show, Generic)
+data DeepStatus =
+  DeepStatus
+    { deepStatusStatus :: Status
+    , deepStatusComments :: [Comment]
+    , deepStatusPictures :: [Picture]
+    }
+  deriving (Eq, Show, Generic)
 
 makeFields ''DeepStatus
 
@@ -42,7 +43,7 @@ instance FromJSON DeepStatus where
       DeepStatus <$> (o .: "status") <*> (o .: "comments") <*> (o .: "pictures")
 
 downloadAllPages ::
-     forall m a. (MonadError ServantError m, MonadIO m)
+     forall m a. (MonadError ClientError m, MonadIO m)
   => (Maybe Int -> m [a])
   -> m [a]
 downloadAllPages action =
@@ -61,7 +62,7 @@ downloadAllPages action =
    in go [] 1 5
 
 downloadDeepStatus ::
-     (MonadError ServantError m, MonadReader WeiboApiClient m, MonadIO m)
+     (MonadError ClientError m, MonadReader WeiboApiClient m, MonadIO m)
   => Status
   -> m DeepStatus
 downloadDeepStatus =
@@ -78,7 +79,7 @@ downloadDeepStatus =
       return (DeepStatus deepStatusStatus [] [])
 
 downloadEverything ::
-     (MonadError ServantError m, MonadReader WeiboApiClient m, MonadIO m)
+     (MonadError ClientError m, MonadReader WeiboApiClient m, MonadIO m)
   => m [DeepStatus]
 downloadEverything = do
   ss <- downloadAllPages getStatuses
