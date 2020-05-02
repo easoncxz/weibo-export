@@ -50,12 +50,11 @@ downloadAllPages action =
   let go :: [[a]] -> Int -> Int -> m [a]
       go xss page retries = do
         xs <-
-          action (Just page) `catchError` \e ->
-            case e of
-              DecodeFailure _ _ -> return []
-              other -> do
-                logError other
-                go xss page (retries - 1)
+          action (Just page) `catchError` \case
+            DecodeFailure _ _ -> return []
+            other -> do
+              logError other
+              go xss page (retries - 1)
         if null xs
           then return (concat (reverse xss))
           else go (xs : xss) (page + 1) retries
@@ -89,7 +88,7 @@ saveDeepStatuses :: FilePath -> FilePath -> [DeepStatus] -> IO ()
 saveDeepStatuses statusDir imgDir ds = do
   createDirectoryIfMissing True statusDir
   createDirectoryIfMissing True imgDir
-  forM_ ds $ \(d@(DeepStatus s cs ps)) -> do
+  forM_ ds $ \d@(DeepStatus s cs ps) -> do
     let statusIDMaybe =
           s ^? _TagNormalStatus . identifier <|> s ^? _TagDeletedStatus .
           identifier

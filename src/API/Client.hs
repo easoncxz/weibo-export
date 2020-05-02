@@ -123,9 +123,10 @@ downloadPicture ::
      (MonadIO m, MonadError Servant.ClientError m) => PictureID -> m Picture
 downloadPicture pid = do
   wr <- liftIO $ Wreq.get (largeJpgUrl pid)
-  when (wr ^. Wreq.responseStatus . Wreq.statusCode /= 200) $ do
-    throwError . Servant.FailureResponse undefined . servantResponseFromWreq $
-      wr
+  when (wr ^. Wreq.responseStatus . Wreq.statusCode /= 200) $ throwError .
+    Servant.FailureResponse undefined .
+    servantResponseFromWreq $
+    wr
   let _pictureIdentifier = pid
       _pictureBytes = Just (wr ^. Wreq.responseBody)
   logInfoM $ return Picture {..}

@@ -8,15 +8,15 @@ import API.Client
 import Downloader
 
 main :: IO ()
-main = do
+main =
   getArgs >>= \case
     [] -> do
       putStrLn "Pass cookie as first argument"
       exitWith (ExitFailure 1)
-    (_:[]) -> do
+    [_] -> do
       putStrLn "Pass weibo status output directory as second argument"
       exitWith (ExitFailure 1)
-    (_:_:[]) -> do
+    [_, _] -> do
       putStrLn "Pass image output directory as second argument"
       exitWith (ExitFailure 1)
     (cookie:statusDir:imgDir:_) -> do

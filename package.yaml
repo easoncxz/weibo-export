@@ -68,8 +68,6 @@ dependencies:
     # --- exe:
   - Cabal
   - base
-  - safe
-  - bytestring
   - text
     # --- tests:
   - HUnit
