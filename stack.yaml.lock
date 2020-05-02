@@ -3,7 +3,56 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: fuzzy-0.1.0.0@sha256:123b9581c587ae5422b67bbad7e81186b1ecbf86941a8049f921ddf136f2234e,833
+    pantry-tree:
+      size: 261
+      sha256: 97019c97e95f2a91089acec705243e1fa5b8529ae112658757e0ab3574905f3c
+  original:
+    hackage: fuzzy-0.1.0.0@sha256:123b9581c587ae5422b67bbad7e81186b1ecbf86941a8049f921ddf136f2234e,833
+- completed:
+    hackage: haddock-library-1.9.0@sha256:4e533a5d93627eb0d6ad6d06cb0db3ac8424d2ad5c71b13582c892d2c9ae491e,4061
+    pantry-tree:
+      size: 3645
+      sha256: 71412858b03ccaf2d535ef7bc109f01ae7b20d89877ced2a6ca2998c239dbd67
+  original:
+    hackage: haddock-library-1.9.0@sha256:4e533a5d93627eb0d6ad6d06cb0db3ac8424d2ad5c71b13582c892d2c9ae491e,4061
+- completed:
+    hackage: haskell-lsp-0.19.0.0@sha256:03a1a05fbdea9376cb1edec358866dc5781925badc3f4b5029ccf4174e765efd,5271
+    pantry-tree:
+      size: 1726
+      sha256: 96ca98a39f69a0e3f0f5214caccfa3a2dca8df9db5bafb3f6437451a3c594f59
+  original:
+    hackage: haskell-lsp-0.19.0.0@sha256:03a1a05fbdea9376cb1edec358866dc5781925badc3f4b5029ccf4174e765efd,5271
+- completed:
+    hackage: haskell-lsp-types-0.19.0.0@sha256:b8b462948f506226f324e0e56010cc9b47df90ec9ebad3b18caa9390d5427287,2941
+    pantry-tree:
+      size: 2451
+      sha256: fb1034e11e42909804bd350e3e0de02886371e1935778a3dece3dd3177520c4a
+  original:
+    hackage: haskell-lsp-types-0.19.0.0@sha256:b8b462948f506226f324e0e56010cc9b47df90ec9ebad3b18caa9390d5427287,2941
+- completed:
+    hackage: hie-bios-0.4.0@sha256:e2d4abef43824d99846d8e08889f3c5ba2ea58414a400ba000d9e6488987a08a,8590
+    pantry-tree:
+      size: 6579
+      sha256: a97096c854e4cdb227d54f45c628d486e710bfda063b3c8ff5e0d15108ef1d90
+  original:
+    hackage: hie-bios-0.4.0@sha256:e2d4abef43824d99846d8e08889f3c5ba2ea58414a400ba000d9e6488987a08a,8590
+- completed:
+    hackage: regex-tdfa-1.3.1.0@sha256:bec13812a56a904ff3510caa19fe1b3ce3939e303604b1bcb3162771c52311ba,6324
+    pantry-tree:
+      size: 2566
+      sha256: 0795972b182b375a05fe51aee34ec69dafe799017a49fd2a3e35162dff3f0850
+  original:
+    hackage: regex-tdfa-1.3.1.0@sha256:bec13812a56a904ff3510caa19fe1b3ce3939e303604b1bcb3162771c52311ba,6324
+- completed:
+    hackage: regex-base-0.94.0.0@sha256:44aa95ca762294ffbb28cf0af9c567d93b5d2c56e4f38ce5385a257d899f968e,2253
+    pantry-tree:
+      size: 483
+      sha256: 627ad9d564650590654720934224090a4e8fc3225e84a7fd1af83bc86b2d446a
+  original:
+    hackage: regex-base-0.94.0.0@sha256:44aa95ca762294ffbb28cf0af9c567d93b5d2c56e4f38ce5385a257d899f968e,2253
 snapshots:
 - completed:
     size: 524996
