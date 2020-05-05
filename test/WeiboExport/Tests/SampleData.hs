@@ -4,7 +4,7 @@ import Control.Lens
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
 
-import API.Types
+import Weibo.Serialisation
 
 sampleFilesIO :: FromJSON a => [FilePath] -> IO [a]
 sampleFilesIO files = do

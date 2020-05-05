@@ -2,7 +2,7 @@ module WeiboExport.Tests.Serialisation
   ( spec
   ) where
 
-import API.Types
+import Weibo.Serialisation
 
 import Control.Monad
 import Data.Aeson

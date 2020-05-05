@@ -20,6 +20,7 @@ extra-source-files:
 description:         Please see the README on Github at <https://github.com/githubuser/weibo-export#readme>
 
 default-extensions:
+- ConstraintKinds
 - DataKinds
 - DeriveGeneric
 - DisambiguateRecordFields

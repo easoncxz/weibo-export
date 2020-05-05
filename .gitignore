@@ -1,3 +1,6 @@
 .stack-work/
 weibo-export.cabal
 *~
+
+# vim
+.*.swp

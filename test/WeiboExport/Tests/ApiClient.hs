@@ -2,8 +2,8 @@ module WeiboExport.Tests.ApiClient where
 
 import Test.Hspec
 
-import API.Client
-import API.Types
+import Weibo (largeJpgUrl)
+import Weibo.Serialisation (ID(ID))
 
 spec :: Spec
 spec =

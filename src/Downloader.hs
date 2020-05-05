@@ -2,8 +2,8 @@ module Downloader where
 
 import Control.Applicative
 import Control.Lens hiding ((.=))
-import Control.Monad.Except
-import Control.Monad.Reader
+import Control.Monad
+import Control.Monad.Except (catchError)
 import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy as BSL
@@ -15,9 +15,9 @@ import Servant.Client (ClientError(DecodeFailure))
 import System.Directory
 import System.FilePath.Posix
 
-import API.Client
-import API.Types
 import Logging
+import Weibo
+import Weibo.Serialisation
 
 data DeepStatus =
   DeepStatus
@@ -26,8 +26,6 @@ data DeepStatus =
     , deepStatusPictures :: [Picture]
     }
   deriving (Eq, Show, Generic)
-
-makeFields ''DeepStatus
 
 instance ToJSON DeepStatus where
   toJSON DeepStatus {..} =
@@ -43,7 +41,7 @@ instance FromJSON DeepStatus where
       DeepStatus <$> (o .: "status") <*> (o .: "comments") <*> (o .: "pictures")
 
 downloadAllPages ::
-     forall m a. (MonadError ClientError m, MonadIO m)
+     forall m a. (MonadWeibo m)
   => (Maybe Int -> m [a])
   -> m [a]
 downloadAllPages action =
@@ -51,21 +49,22 @@ downloadAllPages action =
       go xss page retries = do
         xs <-
           action (Just page) `catchError` \case
-            DecodeFailure _ _ -> return []
-            other -> do
-              logError other
-              go xss page (retries - 1)
+            WeiboServantError (DecodeFailure _ _) -> return []
+            WeiboServantError _other -> do
+              if retries == 0
+                then return []
+                else do
+                  go xss page (retries - 1)
+            WeiboWreqError _e -> do
+              return []
         if null xs
           then return (concat (reverse xss))
           else go (xs : xss) (page + 1) retries
    in go [] 1 5
 
-downloadDeepStatus ::
-     (MonadError ClientError m, MonadReader WeiboApiClient m, MonadIO m)
-  => Status
-  -> m DeepStatus
-downloadDeepStatus =
-  \case
+downloadDeepStatus :: (MonadWeibo m) => Status -> m DeepStatus
+downloadDeepStatus status =
+  case status of
     deepStatusStatus@(TagNormalStatus normalStatus) -> do
       deepStatusComments <-
         if normalStatus ^. commentsCount > 0
@@ -77,9 +76,7 @@ downloadDeepStatus =
     deepStatusStatus@(TagDeletedStatus _) ->
       return (DeepStatus deepStatusStatus [] [])
 
-downloadEverything ::
-     (MonadError ClientError m, MonadReader WeiboApiClient m, MonadIO m)
-  => m [DeepStatus]
+downloadEverything :: MonadWeibo m => m [DeepStatus]
 downloadEverything = do
   ss <- downloadAllPages getStatuses
   sequence (downloadDeepStatus <$> ss)

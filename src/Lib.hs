@@ -2,10 +2,10 @@ module Lib where
 
 import qualified Data.Text.IO as T
 
-import qualified API.Client as API
+import qualified Weibo
 
-getClient :: IO API.WeiboApiClient
+getClient :: IO (Weibo.WeiboApiClient Weibo.WeiboM)
 getClient = do
   putStr "Please provide a cookie: "
   cookie <- T.getLine
-  API.newWeiboApiClient (API.Cookie cookie)
+  Weibo.newWeiboApiClient (Weibo.Cookie cookie)

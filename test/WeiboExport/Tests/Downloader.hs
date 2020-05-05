@@ -3,8 +3,8 @@ module WeiboExport.Tests.Downloader where
 import Data.Aeson
 import Test.Hspec
 
-import API.Types
 import Downloader
+import Weibo.Serialisation
 import WeiboExport.Tests.SampleData
 
 spec :: Spec

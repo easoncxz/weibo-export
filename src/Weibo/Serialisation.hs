@@ -1,4 +1,4 @@
-module API.Types
+module Weibo.Serialisation
   ( ID(..)
   , Status(..)
   , _TagNormalStatus
