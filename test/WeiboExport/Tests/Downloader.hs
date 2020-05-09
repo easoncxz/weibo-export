@@ -1,6 +1,9 @@
+{-# LANGUAGE TypeApplications #-}
+
 module WeiboExport.Tests.Downloader where
 
 import Data.Aeson
+import Data.Generics.Sum (_Ctor)
 import Test.Hspec
 
 import Downloader
@@ -12,8 +15,8 @@ spec =
   describe "Downloader" $
   describe "DeepStatus" $
   before
-    (do ns <- sampleStatusesIO _TagNormalStatus
-        ds <- sampleStatusesIO _TagDeletedStatus
+    (do ns <- sampleStatusesIO (_Ctor @"TagNormalStatus")
+        ds <- sampleStatusesIO (_Ctor @"TagDeletedStatus")
         cs <- sampleCommentListIO
         let p = samplePictureWithoutBytes
         return $

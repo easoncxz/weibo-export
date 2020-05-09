@@ -1,45 +1,16 @@
-module Weibo.Serialisation
-  ( ID(..)
-  , Status(..)
-  , _TagNormalStatus
-  , _TagDeletedStatus
-  , StatusID
-  , NormalStatus(..)
-  , DeletedStatus(..)
-  , User(..)
-  , UserID
-  , Comment(..)
-  , CommentID
-  , Picture(..)
-  , PictureID
-  , StatusListResponse(..)
-  , CommentListResponse(..)
-  , bytes
-  , comments
-  , commentsCount
-  , createdAt
-  , identifier
-  , picIDs
-  , profileImageURL
-  , rawJSON
-  , replyID
-  , replyText
-  , retweetedStatus
-  , screenName
-  , source
-  , statuses
-  , text
-  , user
-  ) where
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedLabels #-}
+
+module Weibo.Serialisation where
 
 import Control.Applicative
-import Control.Lens hiding ((.=))
 import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
 import Data.String.ToString
 import Data.Text (Text)
 import qualified Data.Vector as V
+import GHC.Generics (Generic)
 import Servant.API
 
 newtype ID a i =
@@ -53,27 +24,25 @@ newtype ID a i =
            , ToJSON
            , FromHttpApiData
            , ToHttpApiData
+           , Generic
            )
 
 data Picture =
   Picture
-    { _pictureIdentifier :: PictureID
-    , _pictureBytes :: Maybe BSL.ByteString
+    { identifier :: PictureID
+    , bytes :: Maybe BSL.ByteString
     }
-  deriving (Eq)
+  deriving (Eq, Generic)
 
 type PictureID = ID Picture Text
 
-makeFields ''Picture
-
 instance Show Picture where
-  show Picture {_pictureIdentifier = ID t, _pictureBytes = b} =
-    "Picture { _pictureIdentifier = " ++
-    show t ++ ", _pictureBytes = <" ++ show (BSL.length <$> b) ++ " bytes> }"
+  show Picture {identifier = ID t, bytes = b} =
+    "Picture { identifier = " ++
+    show t ++ ", bytes = <" ++ show (BSL.length <$> b) ++ " bytes> }"
 
 instance ToJSON Picture where
-  toJSON Picture {_pictureIdentifier} =
-    object ["pictureID" .= toJSON _pictureIdentifier]
+  toJSON Picture {identifier} = object ["pictureID" .= toJSON identifier]
 
 instance FromJSON Picture where
   parseJSON =
@@ -81,21 +50,19 @@ instance FromJSON Picture where
 
 data User =
   User
-    { _userIdentifier :: UserID
+    { identifier :: UserID
     , _userScreenName :: Text
     , _userProfileImageURL :: Text
     , _userRawJSON :: Value
     }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 type UserID = ID User Integer
-
-makeFields ''User
 
 instance FromJSON User where
   parseJSON =
     withObject "user object" $ \o -> do
-      _userIdentifier <- o .: "id"
+      identifier <- o .: "id"
       _userScreenName <- o .: "screen_name"
       _userProfileImageURL <- o .: "profile_image_url"
       let _userRawJSON = Object o
@@ -115,7 +82,7 @@ data NormalStatus =
     , _normalStatusCommentsCount :: Int
     , _normalStatusRawJSON :: Value
     }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 data DeletedStatus =
   DeletedStatus
@@ -123,22 +90,14 @@ data DeletedStatus =
     , _deletedStatusCreatedAt :: Text
     , _deletedStatusRawJSON :: Value
     }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 data Status
   = TagNormalStatus NormalStatus
   | TagDeletedStatus DeletedStatus
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 type StatusID = ID Status Text
-
-makeFields ''NormalStatus
-
-makeFields ''DeletedStatus
-
-makeFields ''Status
-
-makePrisms ''Status
 
 instance FromJSON DeletedStatus where
   parseJSON =
@@ -172,10 +131,10 @@ instance FromJSON Status where
         Just other -> fail $ "Unrecognised value at $.deleted: " ++ show other
 
 instance ToJSON DeletedStatus where
-  toJSON = toJSON . view rawJSON
+  toJSON = toJSON . _deletedStatusRawJSON
 
 instance ToJSON NormalStatus where
-  toJSON = toJSON . view rawJSON
+  toJSON = toJSON . _normalStatusRawJSON
 
 instance ToJSON Status where
   toJSON =
@@ -194,11 +153,9 @@ data Comment =
     , _commentReplyText :: Maybe Text
     , _commentRawJSON :: Value
     }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 type CommentID = ID Comment Integer
-
-makeFields ''Comment
 
 instance FromJSON Comment where
   parseJSON =
@@ -214,15 +171,13 @@ instance FromJSON Comment where
       return Comment {..}
 
 instance ToJSON Comment where
-  toJSON = toJSON . view rawJSON
+  toJSON = toJSON . _commentRawJSON
 
 newtype StatusListResponse =
   StatusListResponse
     { _statusListResponseStatuses :: [Status]
     }
-  deriving (Eq, Show)
-
-makeFields ''StatusListResponse
+  deriving (Eq, Show, Generic)
 
 instance FromJSON StatusListResponse where
   parseJSON =
@@ -239,9 +194,7 @@ newtype CommentListResponse =
   CommentListResponse
     { _commentListResponseComments :: [Comment]
     }
-  deriving (Show)
-
-makeFields ''CommentListResponse
+  deriving (Show, Generic)
 
 instance FromJSON CommentListResponse where
   parseJSON =

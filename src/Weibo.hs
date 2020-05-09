@@ -121,9 +121,9 @@ newWeiboApiClient cookie = do
           resp <- Wreq.get (largeJpgUrl pid)
           if (resp ^. Wreq.responseStatus . Wreq.statusCode /= 200)
             then return (Left (WeiboWreqError resp))
-            else let _pictureIdentifier = pid
-                     _pictureBytes = Just (resp ^. Wreq.responseBody)
-                  in return (Right Picture {..})
+            else let identifier = pid
+                     bytes = Just (resp ^. Wreq.responseBody)
+                  in return (Right Picture {identifier, bytes})
   return
     WeiboApiClient
       {weiboApiGetStatuses, weiboApiGetComments, weiboApiDownloadPicture}

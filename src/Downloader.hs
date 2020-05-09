@@ -1,3 +1,7 @@
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedLabels #-}
+
 module Downloader where
 
 import Control.Applicative
@@ -7,6 +11,7 @@ import Control.Monad.Except (catchError)
 import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy as BSL
+import Data.Generics.Labels ()
 import Data.Maybe
 import Data.String.ToString
 import qualified Data.Text as T
@@ -28,7 +33,7 @@ data DeepStatus =
   deriving (Eq, Show, Generic)
 
 instance ToJSON DeepStatus where
-  toJSON DeepStatus {..} =
+  toJSON DeepStatus {deepStatusStatus, deepStatusComments, deepStatusPictures} =
     object
       [ "status" .= deepStatusStatus
       , "comments" .= deepStatusComments
@@ -67,12 +72,14 @@ downloadDeepStatus status =
   case status of
     deepStatusStatus@(TagNormalStatus normalStatus) -> do
       deepStatusComments <-
-        if normalStatus ^. commentsCount > 0
-          then downloadAllPages (getComments (normalStatus ^. identifier))
+        if normalStatus ^. #_normalStatusCommentsCount > 0
+          then downloadAllPages
+                 (getComments (normalStatus ^. #_normalStatusIdentifier))
           else return []
       deepStatusPictures <-
-        sequence [downloadPicture p | p <- normalStatus ^. picIDs]
-      return DeepStatus {..}
+        sequence [downloadPicture p | p <- normalStatus ^. #_normalStatusPicIDs]
+      return
+        DeepStatus {deepStatusComments, deepStatusStatus, deepStatusPictures}
     deepStatusStatus@(TagDeletedStatus _) ->
       return (DeepStatus deepStatusStatus [] [])
 
@@ -87,8 +94,9 @@ saveDeepStatuses statusDir imgDir ds = do
   createDirectoryIfMissing True imgDir
   forM_ ds $ \d@(DeepStatus s cs ps) -> do
     let statusIDMaybe =
-          s ^? _TagNormalStatus . identifier <|> s ^? _TagDeletedStatus .
-          identifier
+          s ^? #_TagNormalStatus . #_normalStatusIdentifier <|> s ^?
+          #_TagDeletedStatus .
+          #_deletedStatusIdentifier
         statusIDText = statusIDMaybe & fromJust & getID & T.unpack
     BSL.writeFile
       (statusDir </> "status-" <> statusIDText <> ".json")

@@ -20,10 +20,11 @@ extra-source-files:
 description:         Please see the README on Github at <https://github.com/githubuser/weibo-export#readme>
 
 default-extensions:
+- AllowAmbiguousTypes
 - ConstraintKinds
 - DataKinds
 - DeriveGeneric
-- DisambiguateRecordFields
+- DuplicateRecordFields
 - EmptyDataDecls
 - FlexibleContexts
 - FlexibleInstances
@@ -32,11 +33,11 @@ default-extensions:
 - LambdaCase
 - MultiParamTypeClasses
 - NamedFieldPuns
+- NoMonomorphismRestriction
 - OverloadedStrings
+- OverloadedLabels
 - RankNTypes
-- RecordWildCards
 - ScopedTypeVariables
-- TemplateHaskell
 - TypeApplications
 - TypeOperators
 
@@ -51,6 +52,7 @@ dependencies:
   - containers
   - directory
   - filepath
+  - generic-lens
   - http-client
   - http-client-tls
   - http-types

@@ -1,6 +1,7 @@
 module WeiboExport.Tests.SampleData where
 
 import Control.Lens
+import Data.Generics.Labels ()
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
 
@@ -26,14 +27,14 @@ sampleCommentListResponseListIO =
 
 sampleStatusesIO :: Prism' Status b -> IO [b]
 sampleStatusesIO f =
-  concatMap (toListOf (statuses . each . f)) <$> sampleStatusListResponseListIO
+  concatMap (toListOf (#_statusListResponseStatuses . each . f)) <$> sampleStatusListResponseListIO
 
 sampleUsersIO :: IO [User]
-sampleUsersIO = map (view user) <$> sampleStatusesIO _TagNormalStatus
+sampleUsersIO = map (view #_normalStatusUser) <$> sampleStatusesIO #_TagNormalStatus
 
 sampleCommentListIO :: IO [Comment]
 sampleCommentListIO =
-  concatMap (view comments) <$> sampleCommentListResponseListIO
+  concatMap (view #_commentListResponseComments) <$> sampleCommentListResponseListIO
 
 samplePictureWithoutBytes :: Picture
 samplePictureWithoutBytes = Picture (ID "abc") Nothing
