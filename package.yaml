@@ -57,6 +57,7 @@ dependencies:
   - http-client-tls
   - http-types
   - lens
+  - lens-aeson
   - mtl
   - pretty-simple
   - servant

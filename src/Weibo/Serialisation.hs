@@ -3,9 +3,10 @@
 module Weibo.Serialisation where
 
 import Control.Applicative
-import Control.Lens (view)
+import Control.Lens hiding ((.=))
 import Control.Monad
 import Data.Aeson
+import Data.Aeson.Lens
 import qualified Data.ByteString.Lazy as BSL
 import Data.Generics.Labels ()
 import Data.String.ToString
@@ -39,8 +40,9 @@ type PictureID = ID Picture Text
 
 instance Show Picture where
   show Picture {identifier = ID t, bytes = b} =
-    "Picture { identifier = " ++
-    show t ++ ", bytes = <" ++ show (BSL.length <$> b) ++ " bytes> }"
+    "Picture { identifier = " ++ show t ++ ", bytes = <" ++
+    show (BSL.length <$> b) ++
+    " bytes> }"
 
 instance ToJSON Picture where
   toJSON Picture {identifier} = object ["pictureID" .= toJSON identifier]
@@ -103,12 +105,9 @@ type StatusID = ID Status Text
 instance FromJSON Status where
   parseJSON =
     withObject "Status" $ \o ->
-      o .:? "deleted" >>= \case
-        Nothing ->
-          StatusNormal <$> parseJSON (Object o) <|>
-          StatusDeleted <$> parseJSON (Object o)
-        Just ("1" :: Text) -> StatusDeleted <$> parseJSON (Object o)
-        Just other -> fail $ "Unrecognised value at $.deleted: " ++ show other
+      (StatusNormal <$> parseJSON (Object o)) <|>
+      (StatusDeleted <$> parseJSON (Object o)) <|>
+      (fail $ "Unrecognised value at $.deleted: " ++ show o)
 
 instance FromJSON NormalStatus where
   parseJSON =
@@ -117,7 +116,9 @@ instance FromJSON NormalStatus where
       identifier <- o .: "idstr"
       createdAt <- o .: "created_at"
       text <- o .: "text"
-      picIDs <- o .:? "pic_ids" .!= []
+      let picIDs :: [PictureID] =
+            fmap ID $ Object o ^.. key "pics" . _Array . traverse . key "pid" .
+            _String
       user <- o .: "user"
       retweetedStatus <- o .:? "retweeted_status"
       commentsCount <- o .: "comments_count"
@@ -202,14 +203,17 @@ newtype StatusListResponse =
 
 instance FromJSON StatusListResponse where
   parseJSON =
-    withArray "a one-element array" $
-    V.headM >=>
-    withObject
-      "a mod/page_list response"
-      (\o -> do
-         cards :: [Object] <- o .: "card_group"
-         ss <- sequence [c .: "mblog" | c <- cards]
-         return (StatusListResponse ss))
+    withObject "StatusListResponse" $ \statusListResponse -> do
+      (n :: Integer) <- statusListResponse .: "ok"
+      case n of
+        1 -> do
+          let (mblogs :: [Value]) =
+                Object statusListResponse ^.. key "data" . key "cards" . _Array .
+                traverse .
+                key "mblog"
+          (statuses :: [Status]) <- forM mblogs parseJSON
+          return (StatusListResponse statuses)
+        o -> fail $ "StatusListResponse.ok: " ++ show o
 
 newtype CommentListResponse =
   CommentListResponse

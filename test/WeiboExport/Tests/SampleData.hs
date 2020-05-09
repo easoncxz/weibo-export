@@ -23,7 +23,7 @@ sampleStatusListResponseListIO :: IO [StatusListResponse]
 sampleStatusListResponseListIO =
   sampleFilesIO
     [ "test/sample-data/status-list-response.json"
-    , "test/sample-data/status-list-response-with-unauthorised.json"
+    --, "test/sample-data/status-list-response-with-unauthorised.json"
     ]
 
 sampleCommentListResponseListIO :: IO [CommentListResponse]
