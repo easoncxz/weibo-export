@@ -56,6 +56,8 @@ downloadAllPages action =
                   go xss page (retries - 1)
             WeiboWreqError _e -> do
               return []
+            WeiboParseError _e -> do
+              return []
         if null xs
           then return (concat (reverse xss))
           else go (xs : xss) (page + 1) retries
@@ -67,9 +69,9 @@ downloadDeepStatus =
     status@(StatusNormal NormalStatus {identifier, commentsCount, picIDs}) -> do
       comments <-
         if commentsCount > 0
-          then downloadAllPages (getComments identifier)
+          then return [] --downloadAllPages (getComments identifier)
           else return []
-      pictures <- sequence [downloadPicture p | p <- picIDs]
+      pictures <- return [] --sequence [downloadPicture p | p <- picIDs]
       return DeepStatus {comments, status, pictures}
     deepStatusStatus@(StatusDeleted DeletedStatus {}) ->
       return (DeepStatus deepStatusStatus [] [])

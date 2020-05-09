@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Weibo
   ( Cookie(..)
@@ -18,11 +19,14 @@ import Control.Lens
 import Control.Monad.Except (ExceptT(..), MonadError, runExceptT)
 import Control.Monad.Reader (MonadReader, ReaderT(..), runReaderT)
 import Control.Monad.Reader (ask)
+import Data.Aeson (eitherDecode)
 import qualified Data.Bifunctor as Bi
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.UTF8 as BS8
+import Data.Maybe (maybeToList)
 import Data.Proxy
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import GHC.Generics (Generic)
 
@@ -64,6 +68,7 @@ weiboApi = Proxy
 data WeiboError
   = WeiboServantError Servant.ClientError
   | WeiboWreqError (Wreq.Response BSL.ByteString)
+  | WeiboParseError String
   deriving (Show, Generic)
 
 -- | Unit of mocking
@@ -96,8 +101,31 @@ runWeiboM client = runExceptT . flip runReaderT client . unWeiboM
 liftWeibo :: IO (Either WeiboError a) -> WeiboM a
 liftWeibo = WeiboM . ReaderT . const . ExceptT
 
-newWeiboApiClient :: Cookie -> IO (WeiboApiClient WeiboM)
-newWeiboApiClient cookie = do
+weiboUrl :: String -> String
+weiboUrl slash = "https://m.weibo.cn" <> slash
+
+myGetStatus :: Text -> Text -> Maybe Int -> IO (Either WeiboError [Status])
+myGetStatus cookie containerID mbPage = do
+  let opts =
+        Wreq.defaults & Wreq.header "Accept" .~
+        [BS8.fromString "application/json"] &
+        Wreq.header "Cookie" .~
+        [T.encodeUtf8 cookie] &
+        Wreq.param "containerid" .~
+        [containerID]
+  resp <-
+    Wreq.getWith
+      (opts & Wreq.param "page" .~ (map (T.pack . show) (maybeToList mbPage)))
+      (weiboUrl "/api/container/getIndex")
+  case resp ^. Wreq.responseStatus . Wreq.statusCode of
+    200 ->
+      let ei =
+            eitherDecode (resp ^. Wreq.responseBody) :: Either String StatusListResponse
+       in return $ Bi.bimap WeiboParseError (view #statuses) ei
+    _ -> return (Left (WeiboWreqError resp))
+
+newWeiboApiClient :: Cookie -> Text -> IO (WeiboApiClient WeiboM)
+newWeiboApiClient cookie containerID = do
   settings <- newManager tlsManagerSettings
   let clientEnv =
         Servant.mkClientEnv
@@ -107,8 +135,7 @@ newWeiboApiClient cookie = do
       --
       weiboApiGetStatuses :: Maybe Int -> WeiboM [Status]
       weiboApiGetStatuses mbPage =
-        liftWeibo $ Bi.bimap WeiboServantError (view #statuses) <$>
-        Servant.runClientM (getStatusesM (Just "cards") mbPage) clientEnv
+        liftWeibo (myGetStatus (unCookie cookie) containerID mbPage)
       --
       weiboApiGetComments :: StatusID -> Maybe Int -> WeiboM [Comment]
       weiboApiGetComments statusID mbPage =

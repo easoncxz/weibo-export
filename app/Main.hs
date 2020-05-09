@@ -14,13 +14,16 @@ main =
       putStrLn "Pass cookie as first argument"
       exitWith (ExitFailure 1)
     [_] -> do
-      putStrLn "Pass weibo status output directory as second argument"
+      putStrLn "Pass weibo cointainerID as second argument"
       exitWith (ExitFailure 1)
     [_, _] -> do
-      putStrLn "Pass image output directory as second argument"
+      putStrLn "Pass weibo status output directory as third argument"
       exitWith (ExitFailure 1)
-    (cookie:statusDir:imgDir:_) -> do
-      client <- newWeiboApiClient (Cookie (T.pack cookie))
+    [_, _, _] -> do
+      putStrLn "Pass image output directory as fourth argument"
+      exitWith (ExitFailure 1)
+    (cookie:cointainerID:statusDir:imgDir:_) -> do
+      client <- newWeiboApiClient (Cookie (T.pack cookie)) (T.pack cointainerID)
       runWeiboM client downloadEverything >>= \case
         Left e -> do
           putStrLn "Failed with some ServantError after some retries"

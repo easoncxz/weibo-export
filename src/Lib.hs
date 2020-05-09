@@ -8,4 +8,6 @@ getClient :: IO (Weibo.WeiboApiClient Weibo.WeiboM)
 getClient = do
   putStr "Please provide a cookie: "
   cookie <- T.getLine
-  Weibo.newWeiboApiClient (Weibo.Cookie cookie)
+  putStr "Please provide a cointainerID: "
+  cointainerID <- T.getLine
+  Weibo.newWeiboApiClient (Weibo.Cookie cookie) cointainerID
