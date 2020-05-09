@@ -4,21 +4,19 @@
 
 module Downloader where
 
-import Control.Applicative
-import Control.Lens hiding ((.=))
+import Control.Lens (view)
 import Control.Monad
 import Control.Monad.Except (catchError)
 import Data.Aeson
 import Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy as BSL
 import Data.Generics.Labels ()
-import Data.Maybe
-import Data.String.ToString
+import Data.String.ToString (toString)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import Servant.Client (ClientError(DecodeFailure))
-import System.Directory
-import System.FilePath.Posix
+import System.Directory (createDirectoryIfMissing)
+import System.FilePath.Posix ((</>))
 
 import Logging
 import Weibo
@@ -26,19 +24,15 @@ import Weibo.Serialisation
 
 data DeepStatus =
   DeepStatus
-    { deepStatusStatus :: Status
-    , deepStatusComments :: [Comment]
-    , deepStatusPictures :: [Picture]
+    { status :: Status
+    , comments :: [Comment]
+    , pictures :: [Picture]
     }
   deriving (Eq, Show, Generic)
 
 instance ToJSON DeepStatus where
-  toJSON DeepStatus {deepStatusStatus, deepStatusComments, deepStatusPictures} =
-    object
-      [ "status" .= deepStatusStatus
-      , "comments" .= deepStatusComments
-      , "pictures" .= deepStatusPictures
-      ]
+  toJSON DeepStatus {status, comments, pictures} =
+    object ["status" .= status, "comments" .= comments, "pictures" .= pictures]
 
 instance FromJSON DeepStatus where
   parseJSON =
@@ -68,19 +62,16 @@ downloadAllPages action =
    in go [] 1 5
 
 downloadDeepStatus :: (MonadWeibo m) => Status -> m DeepStatus
-downloadDeepStatus status =
-  case status of
-    deepStatusStatus@(TagNormalStatus normalStatus) -> do
-      deepStatusComments <-
-        if normalStatus ^. #_normalStatusCommentsCount > 0
-          then downloadAllPages
-                 (getComments (normalStatus ^. #_normalStatusIdentifier))
+downloadDeepStatus =
+  \case
+    status@(StatusNormal NormalStatus {identifier, commentsCount, picIDs}) -> do
+      comments <-
+        if commentsCount > 0
+          then downloadAllPages (getComments identifier)
           else return []
-      deepStatusPictures <-
-        sequence [downloadPicture p | p <- normalStatus ^. #_normalStatusPicIDs]
-      return
-        DeepStatus {deepStatusComments, deepStatusStatus, deepStatusPictures}
-    deepStatusStatus@(TagDeletedStatus _) ->
+      pictures <- sequence [downloadPicture p | p <- picIDs]
+      return DeepStatus {comments, status, pictures}
+    deepStatusStatus@(StatusDeleted DeletedStatus {}) ->
       return (DeepStatus deepStatusStatus [] [])
 
 downloadEverything :: MonadWeibo m => m [DeepStatus]
@@ -92,19 +83,19 @@ saveDeepStatuses :: FilePath -> FilePath -> [DeepStatus] -> IO ()
 saveDeepStatuses statusDir imgDir ds = do
   createDirectoryIfMissing True statusDir
   createDirectoryIfMissing True imgDir
-  forM_ ds $ \d@(DeepStatus s cs ps) -> do
-    let statusIDMaybe =
-          s ^? #_TagNormalStatus . #_normalStatusIdentifier <|> s ^?
-          #_TagDeletedStatus .
-          #_deletedStatusIdentifier
-        statusIDText = statusIDMaybe & fromJust & getID & T.unpack
+  forM_ ds $ \deep@(DeepStatus status comments pictures) -> do
+    let statusIDText =
+          case status of
+            StatusNormal normal -> T.unpack . getID . view #identifier $ normal
+            StatusDeleted deleted ->
+              T.unpack . getID . view #identifier $ deleted
     BSL.writeFile
       (statusDir </> "status-" <> statusIDText <> ".json")
-      (encodePretty d)
+      (encodePretty deep)
     BSL.writeFile
       (statusDir </> "status-" <> statusIDText <> "-comments.json")
-      (encodePretty cs)
-    forM_ ps $ \(Picture pid bytesM) ->
+      (encodePretty comments)
+    forM_ pictures $ \(Picture pid bytesM) ->
       case bytesM of
         Nothing -> logError $ "Picture " ++ show pid ++ " is missing bytes"
         Just bs -> BSL.writeFile (imgDir </> toString pid ++ ".jpg") bs

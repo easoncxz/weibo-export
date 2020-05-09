@@ -1,9 +1,14 @@
+{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
+
 module WeiboExport.Tests.SampleData where
 
 import Control.Lens
-import Data.Generics.Labels ()
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
+import Data.Generics.Product (field)
+import Data.Generics.Sum (_Ctor)
 
 import Weibo.Serialisation
 
@@ -27,14 +32,16 @@ sampleCommentListResponseListIO =
 
 sampleStatusesIO :: Prism' Status b -> IO [b]
 sampleStatusesIO f =
-  concatMap (toListOf (#_statusListResponseStatuses . each . f)) <$> sampleStatusListResponseListIO
+  concatMap (toListOf (field @"statuses" . each . f)) <$>
+  sampleStatusListResponseListIO
 
 sampleUsersIO :: IO [User]
-sampleUsersIO = map (view #_normalStatusUser) <$> sampleStatusesIO #_TagNormalStatus
+sampleUsersIO =
+  map (view (field @"user")) <$> sampleStatusesIO (_Ctor @"StatusNormal")
 
 sampleCommentListIO :: IO [Comment]
 sampleCommentListIO =
-  concatMap (view #_commentListResponseComments) <$> sampleCommentListResponseListIO
+  concatMap (view (field @"comments")) <$> sampleCommentListResponseListIO
 
 samplePictureWithoutBytes :: Picture
 samplePictureWithoutBytes = Picture (ID "abc") Nothing

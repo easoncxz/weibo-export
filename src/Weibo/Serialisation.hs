@@ -1,12 +1,13 @@
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedLabels #-}
 
 module Weibo.Serialisation where
 
 import Control.Applicative
+import Control.Lens (view)
 import Control.Monad
 import Data.Aeson
 import qualified Data.ByteString.Lazy as BSL
+import Data.Generics.Labels ()
 import Data.String.ToString
 import Data.Text (Text)
 import qualified Data.Vector as V
@@ -51,9 +52,9 @@ instance FromJSON Picture where
 data User =
   User
     { identifier :: UserID
-    , _userScreenName :: Text
-    , _userProfileImageURL :: Text
-    , _userRawJSON :: Value
+    , screenName :: Text
+    , profileImageURL :: Text
+    , rawJSON :: Value
     }
   deriving (Eq, Show, Generic)
 
@@ -63,95 +64,105 @@ instance FromJSON User where
   parseJSON =
     withObject "user object" $ \o -> do
       identifier <- o .: "id"
-      _userScreenName <- o .: "screen_name"
-      _userProfileImageURL <- o .: "profile_image_url"
-      let _userRawJSON = Object o
-      return User {..}
+      screenName <- o .: "screen_name"
+      profileImageURL <- o .: "profile_image_url"
+      let rawJSON = Object o
+      return User {identifier, screenName, profileImageURL, rawJSON}
 
 instance ToJSON User where
-  toJSON = toJSON . _userRawJSON
+  toJSON = toJSON . view #rawJSON
 
 data NormalStatus =
   NormalStatus
-    { _normalStatusIdentifier :: StatusID
-    , _normalStatusCreatedAt :: Text
-    , _normalStatusText :: Text
-    , _normalStatusPicIDs :: [PictureID]
-    , _normalStatusUser :: User
-    , _normalStatusRetweetedStatus :: Maybe Status
-    , _normalStatusCommentsCount :: Int
-    , _normalStatusRawJSON :: Value
+    { identifier :: StatusID
+    , createdAt :: Text
+    , text :: Text
+    , picIDs :: [PictureID]
+    , user :: User
+    , retweetedStatus :: Maybe Status
+    , commentsCount :: Int
+    , rawJSON :: Value
     }
   deriving (Eq, Show, Generic)
 
 data DeletedStatus =
   DeletedStatus
-    { _deletedStatusIdentifier :: StatusID
-    , _deletedStatusCreatedAt :: Text
-    , _deletedStatusRawJSON :: Value
+    { identifier :: StatusID
+    , createdAt :: Text
+    , rawJSON :: Value
     }
   deriving (Eq, Show, Generic)
 
 data Status
-  = TagNormalStatus NormalStatus
-  | TagDeletedStatus DeletedStatus
+  = StatusNormal NormalStatus
+  | StatusDeleted DeletedStatus
   deriving (Eq, Show, Generic)
 
 type StatusID = ID Status Text
-
-instance FromJSON DeletedStatus where
-  parseJSON =
-    withObject "DeletedStatus" $ \o -> do
-      let _deletedStatusRawJSON = Object o
-      _deletedStatusIdentifier <- o .: "idstr"
-      _deletedStatusCreatedAt <- o .: "created_at"
-      return DeletedStatus {..}
-
-instance FromJSON NormalStatus where
-  parseJSON =
-    withObject "NormalStatus" $ \o -> do
-      let _normalStatusRawJSON = Object o
-      _normalStatusIdentifier <- o .: "idstr"
-      _normalStatusCreatedAt <- o .: "created_at"
-      _normalStatusText <- o .: "text"
-      _normalStatusPicIDs <- o .:? "pic_ids" .!= []
-      _normalStatusUser <- o .: "user"
-      _normalStatusRetweetedStatus <- o .:? "retweeted_status"
-      _normalStatusCommentsCount <- o .: "comments_count"
-      return NormalStatus {..}
 
 instance FromJSON Status where
   parseJSON =
     withObject "Status" $ \o ->
       o .:? "deleted" >>= \case
         Nothing ->
-          TagNormalStatus <$> parseJSON (Object o) <|>
-          TagDeletedStatus <$> parseJSON (Object o)
-        Just ("1" :: Text) -> TagDeletedStatus <$> parseJSON (Object o)
+          StatusNormal <$> parseJSON (Object o) <|>
+          StatusDeleted <$> parseJSON (Object o)
+        Just ("1" :: Text) -> StatusDeleted <$> parseJSON (Object o)
         Just other -> fail $ "Unrecognised value at $.deleted: " ++ show other
 
-instance ToJSON DeletedStatus where
-  toJSON = toJSON . _deletedStatusRawJSON
+instance FromJSON NormalStatus where
+  parseJSON =
+    withObject "NormalStatus" $ \o -> do
+      let rawJSON = Object o
+      identifier <- o .: "idstr"
+      createdAt <- o .: "created_at"
+      text <- o .: "text"
+      picIDs <- o .:? "pic_ids" .!= []
+      user <- o .: "user"
+      retweetedStatus <- o .:? "retweeted_status"
+      commentsCount <- o .: "comments_count"
+      return
+        NormalStatus
+          { identifier
+          , createdAt
+          , text
+          , picIDs
+          , user
+          , retweetedStatus
+          , commentsCount
+          , rawJSON
+          }
 
-instance ToJSON NormalStatus where
-  toJSON = toJSON . _normalStatusRawJSON
+instance FromJSON DeletedStatus where
+  parseJSON =
+    withObject "DeletedStatus" $ \o -> do
+      let rawJSON = Object o
+      identifier <- o .: "idstr"
+      createdAt <- o .: "created_at"
+      return DeletedStatus {identifier, createdAt, rawJSON}
 
 instance ToJSON Status where
   toJSON =
     \case
-      TagDeletedStatus s -> toJSON s
-      TagNormalStatus s -> toJSON s
+      StatusNormal s -> toJSON s
+      StatusDeleted s -> toJSON s
+
+instance ToJSON NormalStatus where
+  toJSON = toJSON . view #rawJSON
+
+instance ToJSON DeletedStatus where
+  toJSON = toJSON . view #rawJSON
 
 data Comment =
   Comment
-    { _commentIdentifier :: CommentID
-    , _commentUser :: User
-    , _commentCreatedAt :: Text
-    , _commentSource :: Text
-    , _commentText :: Text
-    , _commentReplyID :: Maybe CommentID
-    , _commentReplyText :: Maybe Text
-    , _commentRawJSON :: Value
+    { identifier :: CommentID
+    , user :: User
+    , createAt :: Text
+    , source :: Text
+    , text :: Text
+    , replyID :: Maybe CommentID
+    , replyText :: Maybe Text
+    , rawJSON :: Value
     }
   deriving (Eq, Show, Generic)
 
@@ -160,22 +171,32 @@ type CommentID = ID Comment Integer
 instance FromJSON Comment where
   parseJSON =
     withObject "comment object" $ \o -> do
-      _commentIdentifier <- o .: "id"
-      _commentCreatedAt <- o .: "created_at"
-      _commentSource <- o .: "source"
-      _commentUser <- o .: "user"
-      _commentText <- o .: "text"
-      _commentReplyID <- o .:? "reply_id"
-      _commentReplyText <- o .:? "reply_text"
-      let _commentRawJSON = Object o
-      return Comment {..}
+      identifier <- o .: "id"
+      createAt <- o .: "created_at"
+      source <- o .: "source"
+      user <- o .: "user"
+      text <- o .: "text"
+      replyID <- o .:? "reply_id"
+      replyText <- o .:? "reply_text"
+      let rawJSON = Object o
+      return
+        Comment
+          { identifier
+          , createAt
+          , source
+          , user
+          , text
+          , replyID
+          , replyText
+          , rawJSON
+          }
 
 instance ToJSON Comment where
-  toJSON = toJSON . _commentRawJSON
+  toJSON = toJSON . view #rawJSON
 
 newtype StatusListResponse =
   StatusListResponse
-    { _statusListResponseStatuses :: [Status]
+    { statuses :: [Status]
     }
   deriving (Eq, Show, Generic)
 
@@ -192,7 +213,7 @@ instance FromJSON StatusListResponse where
 
 newtype CommentListResponse =
   CommentListResponse
-    { _commentListResponseComments :: [Comment]
+    { comments :: [Comment]
     }
   deriving (Show, Generic)
 

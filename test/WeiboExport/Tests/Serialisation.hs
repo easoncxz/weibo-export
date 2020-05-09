@@ -21,19 +21,19 @@ spec =
       it "can be decoded" $ void sampleStatusListResponseListIO
     describe "Status" $ do
       describe "NormalStatus" $
-        before (sampleStatusesIO (_Ctor @"TagNormalStatus")) $
+        before (sampleStatusesIO (_Ctor @"StatusNormal")) $
         it "can be round-triped" $
         mapM_ $ \normal -> do
           parseEither parseJSON (toJSON normal) `shouldBe` Right normal
-          parseEither parseJSON (toJSON (TagNormalStatus normal)) `shouldBe`
-            Right (TagNormalStatus normal)
+          parseEither parseJSON (toJSON (StatusNormal normal)) `shouldBe`
+            Right (StatusNormal normal)
       describe "DeletedStatus" $
-        before (sampleStatusesIO (_Ctor @"TagDeletedStatus")) $
+        before (sampleStatusesIO (_Ctor @"StatusDeleted")) $
         it "can be round-tripped" $
         mapM_ $ \deleted -> do
           parseEither parseJSON (toJSON deleted) `shouldBe` Right deleted
-          parseEither parseJSON (toJSON (TagDeletedStatus deleted)) `shouldBe`
-            Right (TagDeletedStatus deleted)
+          parseEither parseJSON (toJSON (StatusDeleted deleted)) `shouldBe`
+            Right (StatusDeleted deleted)
     describe "CommentListResponse" $
       it "can be decoded" $ void sampleCommentListResponseListIO
     describe "Comment" $

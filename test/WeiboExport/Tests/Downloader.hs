@@ -15,13 +15,13 @@ spec =
   describe "Downloader" $
   describe "DeepStatus" $
   before
-    (do ns <- sampleStatusesIO (_Ctor @"TagNormalStatus")
-        ds <- sampleStatusesIO (_Ctor @"TagDeletedStatus")
+    (do ns <- sampleStatusesIO (_Ctor @"StatusNormal")
+        ds <- sampleStatusesIO (_Ctor @"StatusDeleted")
         cs <- sampleCommentListIO
         let p = samplePictureWithoutBytes
         return $
-          [DeepStatus (TagNormalStatus n) cs [p] | n <- ns] ++
-          [DeepStatus (TagDeletedStatus d) cs [p] | d <- ds]) $ do
+          [DeepStatus (StatusNormal n) cs [p] | n <- ns] ++
+          [DeepStatus (StatusDeleted d) cs [p] | d <- ds]) $ do
     it "uses certain keys" $
       mapM_ $ \ds@(DeepStatus s cs ps) ->
         encode ds `shouldBe`

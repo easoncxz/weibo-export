@@ -90,7 +90,7 @@ newtype WeiboM a =
            )
 
 runWeiboM :: WeiboApiClient WeiboM -> WeiboM a -> IO (Either WeiboError a)
-runWeiboM client (WeiboM rea) = runExceptT (runReaderT rea client)
+runWeiboM client = runExceptT . flip runReaderT client . unWeiboM
 
 -- | Convenience and escape hatch for IO
 liftWeibo :: IO (Either WeiboError a) -> WeiboM a
@@ -107,12 +107,12 @@ newWeiboApiClient cookie = do
       --
       weiboApiGetStatuses :: Maybe Int -> WeiboM [Status]
       weiboApiGetStatuses mbPage =
-        liftWeibo $ Bi.bimap WeiboServantError _statusListResponseStatuses <$>
+        liftWeibo $ Bi.bimap WeiboServantError (view #statuses) <$>
         Servant.runClientM (getStatusesM (Just "cards") mbPage) clientEnv
       --
       weiboApiGetComments :: StatusID -> Maybe Int -> WeiboM [Comment]
       weiboApiGetComments statusID mbPage =
-        liftWeibo $ Bi.bimap WeiboServantError _commentListResponseComments <$>
+        liftWeibo $ Bi.bimap WeiboServantError (view #comments) <$>
         Servant.runClientM (getCommentsM (Just statusID) mbPage) clientEnv
       --
       weiboApiDownloadPicture :: PictureID -> WeiboM Picture
