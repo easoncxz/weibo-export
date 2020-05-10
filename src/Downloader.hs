@@ -10,13 +10,13 @@ import Weibo
 
 downloadAllPages ::
      forall m a. (MonadWeibo m)
-  => (Maybe Int -> m [a])
+  => (Int -> m [a])
   -> m [a]
 downloadAllPages action =
   let go :: [[a]] -> Int -> Int -> m [a]
       go xss page retries = do
         xs <-
-          action (Just page) `catchError` \case
+          action page `catchError` \case
             WeiboWreqError _e -> do
               return []
             WeiboParseError _e -> do

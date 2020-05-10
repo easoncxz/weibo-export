@@ -1,32 +1,25 @@
 module Main where
 
-import qualified Data.Text as T
+-- import qualified Data.Text as T
 import System.Environment
 import System.Exit
 
-import Lib (downloadEverything, saveDeepStatuses)
-import Weibo (newWeiboApiClient, runWeiboM)
-
+-- import Weibo (makeWeiboApiClient, runWeiboM)
 main :: IO ()
 main =
   getArgs >>= \case
     [] -> do
       putStrLn "Pass cookie as first argument"
-      exitWith (ExitFailure 1)
+      exitWith (ExitFailure 130)
     [_] -> do
       putStrLn "Pass weibo cointainerID as second argument"
-      exitWith (ExitFailure 1)
+      exitWith (ExitFailure 130)
     [_, _] -> do
       putStrLn "Pass weibo status output directory as third argument"
-      exitWith (ExitFailure 1)
+      exitWith (ExitFailure 130)
     [_, _, _] -> do
       putStrLn "Pass image output directory as fourth argument"
+      exitWith (ExitFailure 130)
+    (_cookie:_cointainerID:_statusDir:_imgDir:_) -> do
+      putStrLn "Under maintenance"
       exitWith (ExitFailure 1)
-    (cookie:cointainerID:statusDir:imgDir:_) -> do
-      client <- newWeiboApiClient (T.pack cookie) (T.pack cointainerID)
-      runWeiboM client downloadEverything >>= \case
-        Left e -> do
-          putStrLn "Failed with some ServantError after some retries"
-          print e
-          exitWith (ExitFailure 13)
-        Right ds -> saveDeepStatuses statusDir imgDir ds

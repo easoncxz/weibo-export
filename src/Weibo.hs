@@ -7,7 +7,7 @@ module Weibo
   , MonadWeibo
   , WeiboM -- hiding constructor!
   , runWeiboM
-  , newWeiboApiClient
+  , makeWeiboApiClient
   , largeJpgUrl
   , getComments
   , getStatuses
@@ -22,7 +22,6 @@ import Data.Aeson (eitherDecode)
 import qualified Data.Bifunctor as Bi
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.UTF8 as BS8
-import Data.Maybe (maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -41,8 +40,8 @@ data WeiboError
 -- | Unit of mocking
 data WeiboApiClient m =
   WeiboApiClient
-    { weiboApiGetStatuses :: Maybe Int -> m [Status]
-    , weiboApiGetComments :: StatusID -> Maybe Int -> m [Comment]
+    { weiboApiGetStatuses :: Int -> m StatusListResponse
+    , weiboApiGetComments :: StatusID -> Int -> m CommentListResponse
     , weiboApiDownloadPicture :: PictureID -> m Picture
     }
   deriving (Generic)
@@ -72,8 +71,9 @@ liftWeibo = WeiboM . ReaderT . const . ExceptT
 weiboUrl :: String -> String
 weiboUrl slash = "https://m.weibo.cn" <> slash
 
-getStatusesImpl :: Text -> Text -> Maybe Int -> IO (Either WeiboError [Status])
-getStatusesImpl cookie containerID mbPage = do
+getStatusesImpl ::
+     Text -> Text -> Int -> IO (Either WeiboError StatusListResponse)
+getStatusesImpl cookie containerID page = do
   let opts =
         foldl
           (&)
@@ -84,13 +84,13 @@ getStatusesImpl cookie containerID mbPage = do
           ]
   resp <-
     Wreq.getWith
-      (opts & Wreq.param "page" .~ (map (T.pack . show) (maybeToList mbPage)))
+      (opts & Wreq.param "page" .~ (map (T.pack . show) [page]))
       (weiboUrl "/api/container/getIndex")
   case resp ^. Wreq.responseStatus . Wreq.statusCode of
     200 ->
       let ei =
             eitherDecode (resp ^. Wreq.responseBody) :: Either String StatusListResponse
-       in return $ Bi.bimap WeiboParseError (view #statuses) ei
+       in return $ Bi.first WeiboParseError ei
     _ -> return (Left (WeiboWreqError resp))
 
 downloadPictureImpl :: PictureID -> IO (Either WeiboError Picture)
@@ -102,12 +102,12 @@ downloadPictureImpl pid = do
              bytes = Just (resp ^. Wreq.responseBody)
           in return (Right Picture {identifier, bytes})
 
-newWeiboApiClient :: Text -> Text -> IO (WeiboApiClient WeiboM)
-newWeiboApiClient cookie containerID =
-  return $
+makeWeiboApiClient :: Text -> Text -> WeiboApiClient WeiboM
+makeWeiboApiClient cookie containerID =
   WeiboApiClient
     { weiboApiGetStatuses = liftWeibo . getStatusesImpl cookie containerID
-    , weiboApiGetComments = \_ _ -> liftWeibo $ return (Right []) -- upstream API broken
+    , weiboApiGetComments =
+        \_ _ -> liftWeibo $ return (Right (CommentListResponse [])) -- upstream API broken
     , weiboApiDownloadPicture = liftWeibo . downloadPictureImpl
     }
 
@@ -117,15 +117,15 @@ largeJpgUrl (ID pid) =
   HTTP.urlEncode True (T.encodeUtf8 pid) <>
   ".jpg"
 
-getComments :: MonadWeibo m => StatusID -> Maybe Int -> m [Comment]
-getComments statusID mbPage = do
+getComments :: MonadWeibo m => StatusID -> Int -> m CommentListResponse
+getComments statusID page = do
   WeiboApiClient {weiboApiGetComments} <- ask
-  weiboApiGetComments statusID mbPage
+  weiboApiGetComments statusID page
 
-getStatuses :: MonadWeibo m => Maybe Int -> m [Status]
-getStatuses mbPage = do
+getStatuses :: MonadWeibo m => Int -> m StatusListResponse
+getStatuses page = do
   WeiboApiClient {weiboApiGetStatuses} <- ask
-  weiboApiGetStatuses mbPage
+  weiboApiGetStatuses page
 
 downloadPicture :: MonadWeibo m => PictureID -> m Picture
 downloadPicture pictureID = do
