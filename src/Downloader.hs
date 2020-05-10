@@ -28,20 +28,24 @@ downloadAllPages action = doPage 1
           return (several ++ rest)
 
 downloadAllStatusesFromPage :: (MonadWeibo m) => Int -> m [Status]
-downloadAllStatusesFromPage = downloadAllStatusesFromPage' (const return)
+downloadAllStatusesFromPage = downloadAllStatusesFromPage' False (const return)
 
 -- | Provide a hook to take a look
 downloadAllStatusesFromPage' ::
-     (MonadWeibo m) => (Int -> [Status] -> m [Status]) -> Int -> m [Status]
-downloadAllStatusesFromPage' look page = do
+     (MonadWeibo m)
+  => Bool
+  -> (Int -> [Status] -> m [Status])
+  -> Int
+  -> m [Status]
+downloadAllStatusesFromPage' noWait look page = do
   liftIO $
     putStrLn ("Starting download for page " <> show page <> " of statuses...")
   getStatuses page >>= \case
     StatusListUnrecogniable _weird -> return []
     StatusListNormal statuses -> do
       saw <- look page statuses
-      if mod page 5 == 0
+      if mod page 5 == 0 && not noWait
         then liftIO $ threadDelay (5 * 1000 * 1000)
         else return ()
-      otherStatuses <- downloadAllStatusesFromPage' look (page + 1)
+      otherStatuses <- downloadAllStatusesFromPage' noWait look (page + 1)
       return (saw ++ otherStatuses)
