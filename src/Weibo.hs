@@ -113,7 +113,7 @@ makeWeiboApiClient containerID headersFilePath = do
   headerFileBytes <- BSL.readFile headersFilePath
   case eitherDecode headerFileBytes of
     Left msg -> do
-      putStrLn ("Error in your header file format: " <> msg)
+      putStrLn ("Error parsing your Firefox headers file: " <> msg)
       exitWith (ExitFailure 130)
     Right (headers :: HeadersConfig) -> do
       return $
