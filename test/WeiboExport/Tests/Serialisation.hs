@@ -34,9 +34,9 @@ spec =
           parseEither parseJSON (toJSON deleted) `shouldBe` Right deleted
           parseEither parseJSON (toJSON (StatusDeleted deleted)) `shouldBe`
             Right (StatusDeleted deleted)
-    describe "CommentListResponse" $
+    xdescribe "CommentListResponse" $
       it "can be decoded" $ void sampleCommentListResponseListIO
-    describe "Comment" $
+    xdescribe "Comment" $
       before sampleCommentListIO $
       it "can be round-triped" $
       mapM_

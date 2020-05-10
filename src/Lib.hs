@@ -49,4 +49,4 @@ getClient = do
   cookie <- T.getLine
   putStr "Please provide a cointainerID: "
   cointainerID <- T.getLine
-  Weibo.newWeiboApiClient (Weibo.Cookie cookie) cointainerID
+  Weibo.newWeiboApiClient cookie cointainerID

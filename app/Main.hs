@@ -4,8 +4,8 @@ import qualified Data.Text as T
 import System.Environment
 import System.Exit
 
-import Downloader
-import Weibo
+import Lib (downloadEverything, saveDeepStatuses)
+import Weibo (newWeiboApiClient, runWeiboM)
 
 main :: IO ()
 main =
@@ -23,7 +23,7 @@ main =
       putStrLn "Pass image output directory as fourth argument"
       exitWith (ExitFailure 1)
     (cookie:cointainerID:statusDir:imgDir:_) -> do
-      client <- newWeiboApiClient (Cookie (T.pack cookie)) (T.pack cointainerID)
+      client <- newWeiboApiClient (T.pack cookie) (T.pack cointainerID)
       runWeiboM client downloadEverything >>= \case
         Left e -> do
           putStrLn "Failed with some ServantError after some retries"

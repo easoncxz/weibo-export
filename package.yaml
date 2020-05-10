@@ -60,9 +60,9 @@ dependencies:
   - lens-aeson
   - mtl
   - pretty-simple
-  - servant
-  - servant-client
-  - servant-client-core
+# - servant
+# - servant-client
+# - servant-client-core
   - text
   - tostring
   - turtle

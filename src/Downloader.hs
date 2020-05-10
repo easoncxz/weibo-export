@@ -4,9 +4,7 @@
 
 module Downloader where
 
-import Control.Monad
 import Control.Monad.Except (catchError)
-import Servant.Client (ClientError(DecodeFailure))
 
 import Weibo
 
@@ -19,12 +17,6 @@ downloadAllPages action =
       go xss page retries = do
         xs <-
           action (Just page) `catchError` \case
-            WeiboServantError (DecodeFailure _ _) -> return []
-            WeiboServantError _other -> do
-              if retries == 0
-                then return []
-                else do
-                  go xss page (retries - 1)
             WeiboWreqError _e -> do
               return []
             WeiboParseError _e -> do

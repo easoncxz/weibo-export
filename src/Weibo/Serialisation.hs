@@ -11,23 +11,13 @@ import qualified Data.ByteString.Lazy as BSL
 import Data.Generics.Labels ()
 import Data.String.ToString
 import Data.Text (Text)
-import qualified Data.Vector as V
 import GHC.Generics (Generic)
-import Servant.API
 
 newtype ID a i =
   ID
     { getID :: i
     }
-  deriving ( Eq
-           , Show
-           , ToString
-           , FromJSON
-           , ToJSON
-           , FromHttpApiData
-           , ToHttpApiData
-           , Generic
-           )
+  deriving (Eq, Show, ToString, FromJSON, ToJSON, Generic)
 
 data Picture =
   Picture

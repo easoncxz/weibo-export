@@ -12,7 +12,7 @@ import WeiboExport.Tests.SampleData
 
 spec :: Spec
 spec =
-  describe "Downloader" $
+  xdescribe "Downloader" $
   describe "DeepStatus" $
   before
     (do ns <- sampleStatusesIO (_Ctor @"StatusNormal")
