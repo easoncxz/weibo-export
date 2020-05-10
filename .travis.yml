@@ -1,0 +1,43 @@
+
+# Since we're installing Gems, let's use Ruby.
+language: ruby
+
+cache:
+    directories:
+        - $HOME/.rvm/
+    timeout: 1000
+
+jobs:
+    include:
+
+        - stage: "Build and test"
+          os: osx
+          osx_image: xcode10  # macOS 10.13 high_sierra
+          install:
+              - ./automation/install-stack.sh
+          script:
+              - stack --no-terminal test
+        - os: osx
+          osx_image: xcode11.3  # macOS 10.14 mojave
+          install:
+              - ./automation/install-stack.sh
+          script:
+              - stack --no-terminal test
+
+        - stage: "Bottle and upload, then gather and publish"
+          if: tag IS present
+          os: osx
+          osx_image: xcode10  # macOS 10.13 high_sierra
+          install:
+              - echo "Nothing to install"
+          script:
+              - ./automation/bottle-and-upload.sh
+              - ./automation/gather-and-publish.sh
+        - if: tag IS present
+          os: osx
+          osx_image: xcode11.3  # macOS 10.14 mojave
+          install:
+              - echo "Nothing to install"
+          script:
+              - ./automation/bottle-and-upload.sh
+              - ./automation/gather-and-publish.sh
