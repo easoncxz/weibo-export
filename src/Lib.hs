@@ -1,13 +1,18 @@
 module Lib where
 
-import qualified Data.Text.IO as T
+import Control.Monad
+import qualified Data.Text as T
 
-import qualified Weibo
+import qualified Downloader
+import qualified Storer
+import Weibo (MonadWeibo)
 
-getClient :: IO (Weibo.WeiboApiClient Weibo.WeiboM)
-getClient = do
-  putStr "Please provide a cookie: "
-  cookie <- T.getLine
-  putStr "Please provide a cointainerID: "
-  cointainerID <- T.getLine
-  return $ Weibo.makeWeiboApiClient cookie cointainerID
+downloadAndSaveStatuses :: MonadWeibo m => FilePath -> m (IO ())
+downloadAndSaveStatuses dir = do
+  (weird, statuses) <- Downloader.downloadAllStatusesFromPage 1
+  return $ do
+    let tag = T.pack (show (length statuses))
+    weirdPath <- Storer.saveUnrecognisableStatusListResponse dir tag weird
+    putStrLn ("Saved StatusListUnrecogniable to: " <> weirdPath)
+    goodPaths <- mapM (Storer.saveStatus dir) statuses
+    forM_ goodPaths $ \p -> putStrLn ("Saved Status to: " <> p)

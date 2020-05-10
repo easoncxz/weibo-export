@@ -185,25 +185,27 @@ instance FromJSON Comment where
 instance ToJSON Comment where
   toJSON = toJSON . view #rawJSON
 
-newtype StatusListResponse =
-  StatusListResponse
-    { statuses :: [Status]
-    }
+data StatusListResponse
+  = StatusListNormal [Status]
+  | StatusListUnrecogniable Value
   deriving (Eq, Show, Generic)
 
 instance FromJSON StatusListResponse where
-  parseJSON =
-    withObject "StatusListResponse" $ \statusListResponse -> do
-      (n :: Integer) <- statusListResponse .: "ok"
-      case n of
-        1 -> do
-          let (mblogs :: [Value]) =
-                Object statusListResponse ^.. key "data" . key "cards" . _Array .
-                traverse .
-                key "mblog"
-          (statuses :: [Status]) <- forM mblogs parseJSON
-          return (StatusListResponse statuses)
-        o -> fail $ "StatusListResponse.ok: " ++ show o
+  parseJSON v = parseNormal v <|> return (StatusListUnrecogniable v)
+    where
+      parseNormal =
+        withObject "StatusListResponse" $ \statusListResponse -> do
+          (n :: Integer) <- statusListResponse .: "ok"
+          case n of
+            1 -> do
+              let (mblogs :: [Value]) =
+                    Object statusListResponse ^.. key "data" . key "cards" .
+                    _Array .
+                    traverse .
+                    key "mblog"
+              (statuses :: [Status]) <- forM mblogs parseJSON
+              return (StatusListNormal statuses)
+            notOK -> fail $ "StatusListResponse.ok: " ++ show notOK
 
 newtype CommentListResponse =
   CommentListResponse

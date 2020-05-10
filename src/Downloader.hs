@@ -1,27 +1,35 @@
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedLabels #-}
-
 module Downloader where
 
 import Control.Monad.Except (catchError)
+import Data.Aeson (Value)
 
 import Weibo
+import Weibo.Serialisation
+
+retry :: MonadWeibo m => Int -> m a -> m (Maybe a)
+retry times action =
+  if times <= 0
+    then return Nothing
+    else (Just <$> action) `catchError` \_ -> retry (times - 1) action
 
 downloadAllPages ::
      forall m a. (MonadWeibo m)
   => (Int -> m [a])
   -> m [a]
-downloadAllPages action =
-  let go :: [[a]] -> Int -> Int -> m [a]
-      go xss page retries = do
-        xs <-
-          action page `catchError` \case
-            WeiboWreqError _e -> do
-              return []
-            WeiboParseError _e -> do
-              return []
-        if null xs
-          then return (concat (reverse xss))
-          else go (xs : xss) (page + 1) retries
-   in go [] 1 5
+downloadAllPages action = doPage 1
+  where
+    doPage p = do
+      got <- retry 5 (action p)
+      case got of
+        Nothing -> return []
+        Just several -> do
+          rest <- doPage (p + 1)
+          return (several ++ rest)
+
+downloadAllStatusesFromPage :: (MonadWeibo m) => Int -> m (Value, [Status])
+downloadAllStatusesFromPage page = do
+  getStatuses page >>= \case
+    StatusListUnrecogniable weird -> return (weird, [])
+    StatusListNormal statuses -> do
+      (weird, otherStatuses) <- downloadAllStatusesFromPage (page + 1)
+      return (weird, statuses ++ otherStatuses)

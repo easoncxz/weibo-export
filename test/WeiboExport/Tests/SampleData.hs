@@ -32,7 +32,7 @@ sampleCommentListResponseListIO =
 
 sampleStatusesIO :: Prism' Status b -> IO [b]
 sampleStatusesIO f =
-  concatMap (toListOf (field @"statuses" . each . f)) <$>
+  concatMap (toListOf (_Ctor @"StatusListNormal" . each . f)) <$>
   sampleStatusListResponseListIO
 
 sampleUsersIO :: IO [User]

@@ -59,6 +59,7 @@ dependencies:
   - lens
   - lens-aeson
   - mtl
+  - optparse-applicative
   - pretty-simple
 # - servant
 # - servant-client
@@ -86,6 +87,8 @@ dependencies:
 
 library:
   source-dirs: src
+  other-modules:
+    Paths_weibo_export
   ghc-options:
   - -Wall
 
