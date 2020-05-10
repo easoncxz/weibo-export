@@ -26,8 +26,9 @@ reportAndSave dir page statuses =
     forM_ goodPaths $ \p -> putStrLn ("Saved Status to: " <> p)
     return statuses
 
-downloadAndSaveStatusesSimultaneously :: MonadWeibo m => FilePath -> m ()
-downloadAndSaveStatusesSimultaneously dir = do
-  statuses <- Downloader.downloadAllStatusesFromPage' (reportAndSave dir) 1
+downloadAndSaveStatusesSimultaneously :: MonadWeibo m => FilePath -> Int -> m ()
+downloadAndSaveStatusesSimultaneously dir startPage = do
+  statuses <-
+    Downloader.downloadAllStatusesFromPage' (reportAndSave dir) startPage
   liftIO $
     putStrLn ("All done. Total statuses downloaded: " <> show (length statuses))

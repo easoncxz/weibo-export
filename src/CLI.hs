@@ -18,6 +18,7 @@ data CLIMode
       { saveDir :: FilePath
       , headersFilePath :: FilePath
       , weiboContainerID :: Text
+      , startFromPage :: Int
       }
   | ShowVersion
   deriving (Eq, Show)
@@ -49,6 +50,12 @@ cliModeParser = versionParser <|> downloadStatusParser
            long "container-id" <>
            help
              "The `containerid` GET query param, copied verbatim from your browser.")
+      startFromPage <-
+        option
+          auto
+          (short 'p' <>
+           long "start-from-page" <>
+           help "Start downloading from this page" <> showDefault <> value 1)
       pure DownloadStatuses {..}
 
 cliModeInfo :: ParserInfo CLIMode
@@ -63,9 +70,11 @@ runApp :: CLIMode -> IO ()
 runApp =
   \case
     ShowVersion -> putStrLn ("weibo-export: " <> (showVersion version))
-    DownloadStatuses {saveDir, headersFilePath, weiboContainerID} -> do
+    DownloadStatuses {saveDir, headersFilePath, weiboContainerID, startFromPage} -> do
       client <- makeWeiboApiClient weiboContainerID headersFilePath
-      runWeiboM client (downloadAndSaveStatusesSimultaneously saveDir) >>= \case
+      runWeiboM
+        client
+        (downloadAndSaveStatusesSimultaneously saveDir startFromPage) >>= \case
         Left e ->
           liftIO $ do
             putStrLn ("Error (probably with the network): " <> show e)

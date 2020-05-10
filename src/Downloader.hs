@@ -34,6 +34,8 @@ downloadAllStatusesFromPage = downloadAllStatusesFromPage' (const return)
 downloadAllStatusesFromPage' ::
      (MonadWeibo m) => (Int -> [Status] -> m [Status]) -> Int -> m [Status]
 downloadAllStatusesFromPage' look page = do
+  liftIO $
+    putStrLn ("Starting download for page " <> show page <> " of statuses...")
   getStatuses page >>= \case
     StatusListUnrecogniable _weird -> return []
     StatusListNormal statuses -> do
