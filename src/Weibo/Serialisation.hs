@@ -7,11 +7,50 @@ import Control.Lens hiding ((.=))
 import Control.Monad
 import Data.Aeson
 import Data.Aeson.Lens
+import Data.Aeson.Types (Parser)
+import qualified Data.Bifunctor as Bi
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
 import Data.Generics.Labels ()
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import Data.String.ToString
 import Data.Text (Text)
+import qualified Data.Text.Encoding as T
+import qualified Data.Vector as V
 import GHC.Generics (Generic)
+
+newtype HeadersConfig =
+  HeadersConfig
+    { unHeadersConfig :: Map BS.ByteString BS.ByteString
+    }
+  deriving (Show)
+
+instance FromJSON HeadersConfig where
+  parseJSON =
+    withObject
+      "HeadersConfig"
+      (\headers ->
+         (headers .: "Request Headers (0 B)") >>=
+         withObject
+           "HeadersConfig.\"Request Headers (0 B)\""
+           (\(reqHeaders :: Object) ->
+              (reqHeaders .: "headers") >>=
+              withArray
+                "HeadersConfig.\"Request Headers (0 B)\""
+                (\(hs :: Array) -> do
+                   headerPairs :: V.Vector (Text, Text) <-
+                     V.mapM parseOneHeader hs
+                   return
+                     (HeadersConfig
+                        (Map.fromList
+                           (map
+                              (Bi.bimap T.encodeUtf8 T.encodeUtf8)
+                              (V.toList headerPairs)))))))
+    where
+      parseOneHeader :: Value -> Parser (Text, Text)
+      parseOneHeader =
+        withObject "oneHeader" $ \h -> (,) <$> h .: "name" <*> h .: "value"
 
 newtype ID a i =
   ID

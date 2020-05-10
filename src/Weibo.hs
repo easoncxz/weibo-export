@@ -16,19 +16,22 @@ module Weibo
 
 import Control.Lens
 import Control.Monad.Except (ExceptT(..), MonadError, runExceptT)
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (MonadReader, ReaderT(..), runReaderT)
 import Control.Monad.Reader (ask)
 import Data.Aeson (eitherDecode)
 import qualified Data.Bifunctor as Bi
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.UTF8 as BS8
+import qualified Data.CaseInsensitive as CI
+import qualified Data.Map.Strict as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import GHC.Generics (Generic)
-
 import qualified Network.HTTP.Types.URI as HTTP
 import qualified Network.Wreq as Wreq
+import System.Exit (ExitCode(..), exitWith)
 
 import Weibo.Serialisation
 
@@ -47,9 +50,10 @@ data WeiboApiClient m =
   deriving (Generic)
 
 -- | Convenience for defining datatype-generic functions as application logic
-type MonadWeibo m = (MonadReader (WeiboApiClient m) m, MonadError WeiboError m)
+type MonadWeibo m
+   = (MonadReader (WeiboApiClient m) m, MonadError WeiboError m, MonadIO m)
 
--- | Hide MonadIO
+-- | Hide MonadIO (fail!)
 newtype WeiboM a =
   WeiboM
     { unWeiboM :: ReaderT (WeiboApiClient WeiboM) (ExceptT WeiboError IO) a
@@ -59,6 +63,7 @@ newtype WeiboM a =
            , Monad
            , MonadReader (WeiboApiClient WeiboM)
            , MonadError WeiboError
+           , MonadIO
            )
 
 runWeiboM :: WeiboApiClient WeiboM -> WeiboM a -> IO (Either WeiboError a)
@@ -72,16 +77,17 @@ weiboUrl :: String -> String
 weiboUrl slash = "https://m.weibo.cn" <> slash
 
 getStatusesImpl ::
-     Text -> Text -> Int -> IO (Either WeiboError StatusListResponse)
-getStatusesImpl cookie containerID page = do
+     Text -> HeadersConfig -> Int -> IO (Either WeiboError StatusListResponse)
+getStatusesImpl containerID (HeadersConfig headersMap) page = do
   let opts =
         foldl
           (&)
           Wreq.defaults
-          [ Wreq.header "Accept" .~ [BS8.fromString "application/json"]
-          , Wreq.header "Cookie" .~ [T.encodeUtf8 cookie]
-          , Wreq.param "containerid" .~ [containerID]
-          ]
+          [ Wreq.header (CI.mk name) .~ [val]
+          | (name, val) <- Map.toList headersMap
+          ] &
+        Wreq.param "containerid" .~
+        [containerID]
   resp <-
     Wreq.getWith
       (opts & Wreq.param "page" .~ (map (T.pack . show) [page]))
@@ -102,14 +108,22 @@ downloadPictureImpl pid = do
              bytes = Just (resp ^. Wreq.responseBody)
           in return (Right Picture {identifier, bytes})
 
-makeWeiboApiClient :: Text -> Text -> WeiboApiClient WeiboM
-makeWeiboApiClient cookie containerID =
-  WeiboApiClient
-    { weiboApiGetStatuses = liftWeibo . getStatusesImpl cookie containerID
-    , weiboApiGetComments =
-        \_ _ -> liftWeibo $ return (Right (CommentListResponse [])) -- upstream API broken
-    , weiboApiDownloadPicture = liftWeibo . downloadPictureImpl
-    }
+makeWeiboApiClient :: Text -> FilePath -> IO (WeiboApiClient WeiboM)
+makeWeiboApiClient containerID headersFilePath = do
+  headerFileBytes <- BSL.readFile headersFilePath
+  case eitherDecode headerFileBytes of
+    Left msg -> do
+      putStrLn ("Error in your header file format: " <> msg)
+      exitWith (ExitFailure 130)
+    Right (headers :: HeadersConfig) -> do
+      return $
+        WeiboApiClient
+          { weiboApiGetStatuses =
+              liftWeibo . getStatusesImpl containerID headers
+          , weiboApiGetComments =
+              \_ _ -> liftWeibo $ return (Right (CommentListResponse [])) -- upstream API broken
+          , weiboApiDownloadPicture = liftWeibo . downloadPictureImpl
+          }
 
 largeJpgUrl :: PictureID -> String
 largeJpgUrl (ID pid) =

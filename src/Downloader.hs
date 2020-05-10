@@ -1,7 +1,8 @@
 module Downloader where
 
+import Control.Concurrent (threadDelay)
 import Control.Monad.Except (catchError)
-import Data.Aeson (Value)
+import Control.Monad.IO.Class (liftIO)
 
 import Weibo
 import Weibo.Serialisation
@@ -26,10 +27,19 @@ downloadAllPages action = doPage 1
           rest <- doPage (p + 1)
           return (several ++ rest)
 
-downloadAllStatusesFromPage :: (MonadWeibo m) => Int -> m (Value, [Status])
-downloadAllStatusesFromPage page = do
+downloadAllStatusesFromPage :: (MonadWeibo m) => Int -> m [Status]
+downloadAllStatusesFromPage = downloadAllStatusesFromPage' (const return)
+
+-- | Provide a hook to take a look
+downloadAllStatusesFromPage' ::
+     (MonadWeibo m) => (Int -> [Status] -> m [Status]) -> Int -> m [Status]
+downloadAllStatusesFromPage' look page = do
   getStatuses page >>= \case
-    StatusListUnrecogniable weird -> return (weird, [])
+    StatusListUnrecogniable _weird -> return []
     StatusListNormal statuses -> do
-      (weird, otherStatuses) <- downloadAllStatusesFromPage (page + 1)
-      return (weird, statuses ++ otherStatuses)
+      saw <- look page statuses
+      if mod page 5 == 0
+        then liftIO $ threadDelay (5 * 1000 * 1000)
+        else return ()
+      otherStatuses <- downloadAllStatusesFromPage' look (page + 1)
+      return (saw ++ otherStatuses)

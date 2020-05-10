@@ -1,18 +1,33 @@
 module Lib where
 
 import Control.Monad
-import qualified Data.Text as T
+import Control.Monad.IO.Class (liftIO)
 
 import qualified Downloader
+import Logging (logInfoM)
 import qualified Storer
 import Weibo (MonadWeibo)
+import Weibo.Serialisation (Status)
 
-downloadAndSaveStatuses :: MonadWeibo m => FilePath -> m (IO ())
+-- | Bad, since the `liftIO` doesn't happen until the whole `statuses` has finished
+downloadAndSaveStatuses :: MonadWeibo m => FilePath -> m ()
 downloadAndSaveStatuses dir = do
-  (weird, statuses) <- Downloader.downloadAllStatusesFromPage 1
-  return $ do
-    let tag = T.pack (show (length statuses))
-    weirdPath <- Storer.saveUnrecognisableStatusListResponse dir tag weird
-    putStrLn ("Saved StatusListUnrecogniable to: " <> weirdPath)
-    goodPaths <- mapM (Storer.saveStatus dir) statuses
+  statuses <- Downloader.downloadAllStatusesFromPage 1
+  liftIO $ do
+    goodPaths <- mapM (logInfoM . Storer.saveStatus dir) statuses
     forM_ goodPaths $ \p -> putStrLn ("Saved Status to: " <> p)
+    putStrLn "All done."
+
+reportAndSave :: MonadWeibo m => FilePath -> Int -> [Status] -> m [Status]
+reportAndSave dir page statuses =
+  liftIO $ do
+    goodPaths <- mapM (Storer.saveStatus dir) statuses
+    putStrLn ("Saved page " <> show page <> " of statuses")
+    forM_ goodPaths $ \p -> putStrLn ("Saved Status to: " <> p)
+    return statuses
+
+downloadAndSaveStatusesSimultaneously :: MonadWeibo m => FilePath -> m ()
+downloadAndSaveStatusesSimultaneously dir = do
+  statuses <- Downloader.downloadAllStatusesFromPage' (reportAndSave dir) 1
+  liftIO $
+    putStrLn ("All done. Total statuses downloaded: " <> show (length statuses))
