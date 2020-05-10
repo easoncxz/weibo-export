@@ -6,7 +6,7 @@ import Data.Aeson
 import Data.Generics.Sum (_Ctor)
 import Test.Hspec
 
-import Downloader
+import Downloader.Deep
 import Weibo.Serialisation
 import WeiboExport.Tests.SampleData
 
