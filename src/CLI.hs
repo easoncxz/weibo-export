@@ -6,8 +6,11 @@ module CLI where
 import Data.Text (Text)
 import Data.Version (showVersion)
 import Options.Applicative
+import System.Exit (ExitCode(..), exitWith)
 
+import Lib (downloadAndSaveStatuses)
 import Paths_weibo_export (version)
+import Weibo (makeWeiboApiClient, runWeiboM)
 
 data CLIMode
   = DownloadStatuses
@@ -59,7 +62,15 @@ runApp :: CLIMode -> IO ()
 runApp =
   \case
     ShowVersion -> putStrLn ("weibo-export: " <> (showVersion version))
-    _ -> putStrLn "unsupported"
+    DownloadStatuses {saveDir, cookie, weiboContainerID} -> do
+      let client = makeWeiboApiClient cookie weiboContainerID
+      runWeiboM client (downloadAndSaveStatuses saveDir) >>= \case
+        Left e -> do
+          putStrLn ("Error (probably with the network): " <> show e)
+          exitWith (ExitFailure 15)
+        Right save -> do
+          save
+          putStrLn "All done."
 
 cliMain :: IO ()
 cliMain = do
