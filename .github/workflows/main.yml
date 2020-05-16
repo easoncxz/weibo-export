@@ -10,6 +10,9 @@ on:
       - master
   create:
     # Branch or tag created
+  repository_dispatch:
+    # https://github.com/peter-evans/repository-dispatch
+    types: ['trigger_ci_run']
 
 env:
   EASONCXZ_GITHUB_OAUTH_TOKEN_v2: "${{ secrets.EASONCXZ_GITHUB_OAUTH_TOKEN_v2 }}"
@@ -17,7 +20,7 @@ env:
 
 
 jobs:
-  test:
+  build:
     runs-on: macos-10.15
 
     steps:
@@ -60,8 +63,8 @@ jobs:
 
   deploy:
     runs-on: macos-10.15
-    needs: test
-    if: github.event_name == 'create' && github.event.ref_type == 'tag'
+    needs: build
+    if: (github.event_name == 'create' && github.event.ref_type == 'tag') || github.event_name == 'repository_dispatch'
 
     steps:
 
