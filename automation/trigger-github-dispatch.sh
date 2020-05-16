@@ -9,7 +9,7 @@ set -e  # Fail fast
 #   - https://developer.github.com/v3/repos/#create-a-repository-dispatch-event
 
 owner=easoncxz
-repo=hack-assembler
+repo=weibo-export
 
 if [ $# -lt 1 ]
 then
