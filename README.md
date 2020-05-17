@@ -14,8 +14,7 @@ only.
 
 # 用途
 
-这是我主要写给自己用的。我希望能尽可能多地下载保留自己微博帐号上的信息，
-以对可能的炸号做准备。
+这是我主要写给自己用的。我希望能尽可能多地下载保留自己微博帐号上的信息， 以对可能的炸号做准备。
 
 # 安装
 
@@ -29,8 +28,7 @@ only.
 
 ### Linux
 
-抱歉，我尚未研究好如何自动发布预编译版本给 Linux 用户。烦请安装
-Haskell 的 build tool 自行编译：
+抱歉，我尚未研究好如何自动发布预编译版本给 Linux 用户。烦请安装 Haskell 的 build tool 自行编译：
 
     git clone git@github.com:easoncxz/weibo-export.git
     cd weibo-export
@@ -42,8 +40,7 @@ Haskell 的 build tool 自行编译：
 
     stack install
 
-以上命令将会放置一个可执行文件到 `~/.local/bin`. 如果你喜欢，可以将
-这个目录加到你的 `PATH` 环境变量中以方便使用 `weibo-export`.
+以上命令将会放置一个可执行文件到 `~/.local/bin`. 如果你喜欢，可以将这个目录加到你的 `PATH` 环境变量中以方便使用 `weibo-export`.
 
 # 使用
 
@@ -63,8 +60,7 @@ Haskell 的 build tool 自行编译：
                                rate-limited
       -h,--help                Show this help text
 
-请上微博找到你的用户 ID. 这是一串大概 10 位长的数字。比如，`1537790411` 好象是
-一个叫「鹿晗」的人的 user ID. 一般 user ID 会出现在浏览器地址栏里，比如：
+请上微博找到你的用户 ID. 这是一串大概 10 位长的数字。比如，`1537790411` 好象是一个叫「鹿晗」的人的 user ID. 一般 user ID 会出现在浏览器地址栏里，比如：
 
     https://m.weibo.cn/u/1537790411
 
@@ -74,8 +70,7 @@ Haskell 的 build tool 自行编译：
         -o weibo-downloaded \
         -u 1537790411
 
-我个人喜欢用 `tee` 命令在观看输出的同时，记录一份日志，好知道我下载了多少、下载
-了那些微博。
+我个人喜欢用 `tee` 命令在观看输出的同时，记录一份日志，好知道我下载了多少、下载了哪些微博。
 
     weibo-export \
         -o weibo-downloaded \
@@ -99,6 +94,8 @@ Haskell 的 build tool 自行编译：
     Saved page 199 of statuses
     Saved Status to: weibo-downloaded/status-normal-0000000000000000.json
     Saved Status to: weibo-downloaded/status-normal-0000000000000000.json
+
+可以随时用 Ctrl-C 来中断下载；已下载的文件不会丢失。也可以任意地重新下载；相应的输出文件会被覆盖。
 
 输出文件格式是新浪服务器 API 的一部分，暂时每条微博一个 JSON 文件来储存。
 可以用 [`jq`][jq] 进行检阅、分析，和处理。
