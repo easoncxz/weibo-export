@@ -20,7 +20,7 @@ env:
 
 
 jobs:
-  build:
+  test:
     runs-on: macos-10.15
 
     steps:
@@ -63,9 +63,8 @@ jobs:
 
   deploy:
     runs-on: macos-10.15
-    needs: build
-    if: |
-      (github.event_name == 'create' && github.event.ref_type == 'tag') || github.event_name == 'repository_dispatch'
+    needs: test
+    if: (github.event_name == 'create' && github.event.ref_type == 'tag') || github.event_name == 'repository_dispatch'
 
     steps:
 
@@ -82,14 +81,11 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install homebrew_automation
-      if: github.event_name == 'create' && github.event.ref_type == 'tag'
       run: ./automation/install-homebrew-automation.sh
 
 
     - name: Bottle and upload
-      if: github.event_name == 'create' && github.event.ref_type == 'tag'
       run: ./automation/bottle-and-upload.sh
 
     - name: Gather and publish
-      if: github.event_name == 'create' && github.event.ref_type == 'tag'
       run: ./automation/gather-and-publish.sh
