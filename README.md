@@ -123,3 +123,4 @@ BSD 3-clause 协议。详见 [LICENSE](./LICENSE)。
 
 [weibo]: http://weibo.com
 [brew]: https://brew.sh/
+[jq]: https://stedolan.github.io/jq/
