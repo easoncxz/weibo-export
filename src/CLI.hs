@@ -4,7 +4,6 @@
 module CLI where
 
 import Control.Monad.IO.Class (liftIO)
-import Data.Text (Text)
 import Data.Version (showVersion)
 import Options.Applicative
 import System.Exit (ExitCode(..), exitWith)
@@ -12,13 +11,13 @@ import System.Exit (ExitCode(..), exitWith)
 import Lib (downloadAndSaveStatusesSimultaneously)
 import Paths_weibo_export (version)
 import Weibo (makeWeiboApiClient, runWeiboM)
+import Weibo.Serialisation (ID(ID))
 
 data CLIMode
   = DownloadStatuses
-      { saveDir :: FilePath
-      , headersFilePath :: FilePath
-      , weiboContainerID :: Text
+      { weiboUserID :: Integer
       , startFromPage :: Int
+      , saveDir :: FilePath
       , noWait :: Bool
       }
   | ShowVersion
@@ -33,30 +32,23 @@ cliModeParser = versionParser <|> downloadStatusParser
         (long "version" <>
          short 'v' <> help "Display the version of weibo-export")
     downloadStatusParser = do
-      saveDir <-
-        strOption
-          (short 'o' <>
-           long "output-dir" <>
-           help
-             "Where to put downloaded files. This will be created with `mkdir -p` if it doesn't exist.")
-      headersFilePath <-
-        strOption
-          (short 'f' <>
-           long "headers-file" <>
-           help
-             "A JSON file containing all HTTP headers to use. Format is Firefox's \"Copy Request Headers\".")
-      weiboContainerID <-
-        strOption
-          (short 'i' <>
-           long "container-id" <>
-           help
-             "The `containerid` GET query param, copied verbatim from your browser.")
+      weiboUserID <-
+        option
+          auto
+          (short 'u' <>
+           long "user" <> help "User ID on weibo, e.g. \"3563717322\"")
       startFromPage <-
         option
           auto
           (short 'p' <>
            long "start-from-page" <>
            help "Start downloading from this page" <> showDefault <> value 1)
+      saveDir <-
+        strOption
+          (short 'o' <>
+           long "output-dir" <>
+           help
+             "Where to put downloaded files. This will be created with `mkdir -p` if it doesn't exist.")
       noWait <-
         switch
           (short 'w' <>
@@ -70,22 +62,21 @@ cliModeInfo =
     (cliModeParser <**> helper)
     (fullDesc <>
      progDesc "Download Weibo statuses via the m.weibo.cn mobile web API" <>
-     header "weibo-export")
+     header ("weibo-export: " <> (showVersion version)))
 
 runApp :: CLIMode -> IO ()
 runApp =
   \case
-    ShowVersion -> putStrLn ("weibo-export: " <> (showVersion version))
-    DownloadStatuses { saveDir
-                     , headersFilePath
-                     , weiboContainerID
-                     , startFromPage
-                     , noWait
-                     } -> do
-      client <- makeWeiboApiClient weiboContainerID headersFilePath
+    ShowVersion -> putStrLn (showVersion version)
+    DownloadStatuses {weiboUserID, startFromPage, saveDir, noWait} -> do
+      client <- makeWeiboApiClient
       runWeiboM
         client
-        (downloadAndSaveStatusesSimultaneously saveDir noWait startFromPage) >>= \case
+        (downloadAndSaveStatusesSimultaneously
+           saveDir
+           noWait
+           (ID weiboUserID)
+           startFromPage) >>= \case
         Left e ->
           liftIO $ do
             putStrLn ("Error (probably with the network): " <> show e)

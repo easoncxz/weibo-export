@@ -5,17 +5,21 @@ module Weibo.Serialisation where
 import Control.Applicative
 import Control.Lens hiding ((.=))
 import Control.Monad
+import Control.Monad.Except (liftEither, runExcept, throwError)
 import Data.Aeson
 import Data.Aeson.Lens
 import Data.Aeson.Types (Parser)
 import qualified Data.Bifunctor as Bi
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BSL
+import Data.Foldable (toList)
 import Data.Generics.Labels ()
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
+import Data.Maybe (listToMaybe)
 import Data.String.ToString
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Vector as V
 import GHC.Generics (Generic)
@@ -57,6 +61,11 @@ newtype ID a i =
     { getID :: i
     }
   deriving (Eq, Show, ToString, FromJSON, ToJSON, Generic)
+
+-- | Some kind of opaque Weibo concept
+data Container
+
+type ContainerID = ID Container Text
 
 data Picture =
   Picture
@@ -102,6 +111,39 @@ instance FromJSON User where
 
 instance ToJSON User where
   toJSON = toJSON . view #rawJSON
+
+newtype UserRoot =
+  UserRoot Value
+  deriving (Show)
+
+-- | https://m.weibo.cn/api/container/getIndex\?type\=uid\&value\=$uid
+parseContainerID :: UserRoot -> Either String ContainerID
+parseContainerID (UserRoot root) =
+  runExcept $ do
+    ok :: Value <-
+      case root ^? key "ok" of
+        Just (Number 1) -> return root
+        _ -> do
+          utf8 <-
+            liftEither
+              (Bi.first show (T.decodeUtf8' (BSL.toStrict (encode root))))
+          throwError ("Weibo returned JSON error: " ++ T.unpack utf8)
+    tabs :: Array <-
+      case ok ^? key "data" . key "tabsInfo" . key "tabs" . _Array of
+        Just vec -> return vec
+        _ ->
+          throwError
+            ("Can't find 'tabs' array in Weibo API JSON: " ++ show (encode ok))
+    case join
+           (listToMaybe
+              [ t ^? key "containerid" . _String
+              | t <- toList tabs
+              , t ^? key "tab_type" == Just (String "weibo")
+              ]) of
+      Just (cid :: Text) -> return (ID cid)
+      Nothing ->
+        throwError
+          ("Cannot find a tab with tab_type == 'weibo': " ++ show (encode tabs))
 
 data NormalStatus =
   NormalStatus

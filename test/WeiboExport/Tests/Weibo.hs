@@ -3,7 +3,7 @@ module WeiboExport.Tests.Weibo where
 import qualified Data.Aeson as A
 import Test.Hspec
 
-import Weibo (UserRoot(..), findContainerID)
+import Weibo.Serialisation (ID(ID), UserRoot(..), parseContainerID)
 
 spec :: Spec
 spec =
@@ -11,4 +11,4 @@ spec =
   it "can pick out a containerid" $ do
     Just (v :: A.Value) <-
       A.decodeFileStrict' "test/sample-data/user-top-level.json"
-    findContainerID (UserRoot v) `shouldBe` Right "1076032113725781"
+    parseContainerID (UserRoot v) `shouldBe` Right (ID "1076032113725781")
