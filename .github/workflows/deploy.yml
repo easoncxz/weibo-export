@@ -1,0 +1,46 @@
+
+
+name: Just deploy
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  create:
+    # Branch or tag created
+  repository_dispatch:
+    # https://github.com/peter-evans/repository-dispatch
+    types: ['trigger_ci_run']
+
+env:
+  EASONCXZ_GITHUB_OAUTH_TOKEN_v2: "${{ secrets.EASONCXZ_GITHUB_OAUTH_TOKEN_v2 }}"
+  EASONCXZ_BINTRAY_API_KEY: "${{ secrets.EASONCXZ_BINTRAY_API_KEY }}"
+
+
+jobs:
+  deploy:
+    runs-on: macos-10.15
+    if: (github.event_name == 'create' && github.event.ref_type == 'tag') || github.event_name == 'repository_dispatch'
+
+    steps:
+
+    - name: Look at github context variable
+      run: |
+        echo 'event.ref: ${{ github.event.ref }}'
+        echo 'event.head: ${{ github.event.head }}'
+        echo 'event_path: ${{ github.event_path }}'
+        echo 'event_name: ${{ github.event_name }}'
+        echo 'ref: ${{ github.ref }}'
+        cat "${{ github.event_path }}"
+
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+
+    - name: Install homebrew_automation
+      run: ./automation/install-homebrew-automation.sh
+
+
+    - name: Bottle and upload
+      run: ./automation/bottle-and-upload.sh
+
+    - name: Gather and publish
+      run: ./automation/gather-and-publish.sh
