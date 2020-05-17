@@ -14,9 +14,11 @@ repo=weibo-export
 if [ $# -lt 1 ]
 then
     echo "Usage: $0 event_type [client_payload]"
+    echo
+    echo '  For client_payload, you might want "trigger_ci_run".'
+    echo '  See .github/workflows/deploy.yml for details.'
     exit 1
 else
-    # You might want `trigger_ci_run`; see .github/workflows/main.yml for details
     event_type="$1"
 
     if [ $# -lt 2 ]
